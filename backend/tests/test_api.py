@@ -134,3 +134,24 @@ def test_results_are_saved_in_order_and_deleted_with_task(client):
     assert client.post("/api/tasks/999/results", json={"text": "x"}).status_code == 404
     assert client.post(f"/api/tasks/{task_id}/results", json={"text": " "}).status_code == 422
     assert client.delete(f"/api/tasks/{task_id}").status_code == 204
+
+
+def test_reorder_steps(client):
+    task_id = client.post("/api/tasks", json={"title": "Hackathon"}).json()["id"]
+    ids = [
+        client.post(f"/api/tasks/{task_id}/steps", json={"text": t}).json()["id"]
+        for t in ["a", "b", "c"]
+    ]
+    r = client.put(f"/api/tasks/{task_id}/steps/order", json={"step_ids": [ids[2], ids[0], ids[1]]})
+    assert r.status_code == 204
+    steps = client.get(f"/api/tasks/{task_id}").json()["steps"]
+    assert [s["text"] for s in steps] == ["c", "a", "b"]
+
+    # Must list every step exactly once.
+    assert client.put(f"/api/tasks/{task_id}/steps/order", json={"step_ids": ids[:2]}).status_code == 422
+    assert client.put("/api/tasks/999/steps/order", json={"step_ids": []}).status_code == 404
+
+    # A step added afterwards goes to the end.
+    client.post(f"/api/tasks/{task_id}/steps", json={"text": "d"})
+    texts = [s["text"] for s in client.get(f"/api/tasks/{task_id}").json()["steps"]]
+    assert texts == ["c", "a", "b", "d"]

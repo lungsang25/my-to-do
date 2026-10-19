@@ -4,7 +4,7 @@ from fastapi import Depends, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
 from .db import Conn, get_conn
-from .schemas import Result, ResultCreate, Step, StepCreate, StepUpdate, Task, TaskCreate
+from .schemas import Result, ResultCreate, Step, StepCreate, StepOrder, StepUpdate, Task, TaskCreate
 
 app = FastAPI(title="My To-Do")
 
@@ -121,6 +121,17 @@ def add_result(
     )
     row = conn.execute("SELECT * FROM results WHERE id = ?", (result_id,)).fetchone()
     return _result(row)
+
+
+@app.put("/api/tasks/{task_id}/steps/order", status_code=204)
+def reorder_steps(task_id: int, body: StepOrder, conn: Conn = Depends(get_conn)) -> None:
+    if conn.execute("SELECT 1 FROM tasks WHERE id = ?", (task_id,)).fetchone() is None:
+        raise HTTPException(status_code=404, detail="Task not found")
+    existing = conn.execute("SELECT id FROM steps WHERE task_id = ?", (task_id,)).fetchall()
+    if sorted(r["id"] for r in existing) != sorted(body.step_ids):
+        raise HTTPException(status_code=422, detail="step_ids must list every step of the task once")
+    for position, step_id in enumerate(body.step_ids):
+        conn.execute("UPDATE steps SET position = ? WHERE id = ?", (position, step_id))
 
 
 @app.patch("/api/steps/{step_id}", response_model=Step)

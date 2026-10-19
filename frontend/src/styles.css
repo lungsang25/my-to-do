@@ -695,3 +695,110 @@ button {
   left: 4px;
   color: #ffc83d;
 }
+
+/* ---------- Task editing ---------- */
+
+.modal-header h2 {
+  flex: 1;
+  min-width: 0;
+}
+
+.edit-toggle {
+  align-self: center;
+  padding: 4px 12px;
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  background: transparent;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.edit-toggle:hover,
+.edit-toggle.active {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.step-item.editing {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.step-item.editing .step {
+  flex: 1;
+  min-width: 0;
+}
+
+.drag-handle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 28px;
+  height: 32px;
+  padding: 0;
+  border: none;
+  border-radius: 6px;
+  background: none;
+  color: var(--muted);
+  cursor: grab;
+  touch-action: none;
+}
+
+.drag-handle:hover:not(:disabled) {
+  color: var(--fg);
+}
+
+.drag-handle:active:not(:disabled) {
+  cursor: grabbing;
+}
+
+.drag-handle:disabled {
+  opacity: 0.25;
+  cursor: default;
+}
+
+.step-item.dragging {
+  border-radius: 8px;
+  background: var(--hover);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+
+.add-step {
+  display: flex;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.add-step input {
+  flex: 1;
+  min-width: 0;
+  padding: 10px 14px;
+  border: 1px solid var(--border-strong);
+  border-radius: 10px;
+  background: transparent;
+  color: var(--fg);
+  font: inherit;
+  outline: none;
+}
+
+.add-step input:focus {
+  border-color: var(--accent);
+}
+
+.add-step button {
+  padding: 0 16px;
+  border: none;
+  border-radius: 10px;
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.add-step button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}

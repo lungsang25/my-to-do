@@ -82,6 +82,38 @@ export default function App() {
     }
   };
 
+  const addStep = async (task: Task, text: string) => {
+    if (task.id < 0) return; // not saved yet
+    const temp = { id: -Date.now(), task_id: task.id, text, position: task.steps.length, done: false };
+    // Optimistic: a new unchecked step also sends a finished task back to To Do.
+    setTasks((prev) =>
+      prev.map((t) => (t.id === task.id ? { ...t, steps: [...t.steps, temp], status: "todo" } : t)),
+    );
+    try {
+      await api.addStep(task.id, text);
+    } catch (e) {
+      setError((e as Error).message);
+    }
+    await refresh(); // real ids (and the server's view if the save failed)
+  };
+
+  const reorderSteps = async (task: Task, stepIds: number[]) => {
+    if (task.id < 0 || stepIds.some((id) => id < 0)) return;
+    setTasks((prev) =>
+      prev.map((t) => {
+        if (t.id !== task.id) return t;
+        const byId = new Map(t.steps.map((s) => [s.id, s]));
+        return { ...t, steps: stepIds.map((id, i) => ({ ...byId.get(id)!, position: i })) };
+      }),
+    );
+    try {
+      await api.reorderSteps(task.id, stepIds);
+    } catch (e) {
+      setError((e as Error).message);
+      await refresh();
+    }
+  };
+
   const deleteTask = async (task: Task) => {
     if (task.id < 0) return; // not saved yet; real ids arrive with the next refresh
     if (!window.confirm(`Delete "${task.title}"?`)) return;
@@ -103,13 +135,15 @@ export default function App() {
   const resultTask = tasks.find((t) => t.id === resultTaskId) ?? null;
   const openTask = tasks.find((t) => t.id === openTaskId) ?? null;
   const showBoard = tasks.length > 0;
+  // While adding a task, show only the field (the board returns when it's done or closed).
+  const entering = showPrompt || currentTask !== null;
 
   return (
     <>
       <ThemeToggle theme={theme} onToggle={toggle} />
 
-      <main className={showBoard ? "layout with-board" : "layout"}>
-        {showBoard && (
+      <main className={showBoard && !entering ? "layout with-board" : "layout"}>
+        {showBoard && !entering && (
           <Board
             tasks={tasks}
             onOpen={(t) => setOpenTaskId(t.id)}
@@ -156,7 +190,13 @@ export default function App() {
       </main>
 
       {resultTask && <ResultModal task={resultTask} onClose={closeResults} />}
-      {openTask && <TaskModal task={openTask} onClose={closeModal} onToggleStep={toggleStep} />}
+      {openTask && <TaskModal
+          task={openTask}
+          onClose={closeModal}
+          onToggleStep={toggleStep}
+          onAddStep={addStep}
+          onReorder={reorderSteps}
+        />}
     </>
   );
 }

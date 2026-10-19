@@ -44,6 +44,11 @@ export const api = {
     request<Step>(`/tasks/${taskId}/steps`, { method: "POST", body: JSON.stringify({ text }) }),
   addResult: (taskId: number, text: string) =>
     request<Result>(`/tasks/${taskId}/results`, { method: "POST", body: JSON.stringify({ text }) }),
+  reorderSteps: (taskId: number, stepIds: number[]) =>
+    request<void>(`/tasks/${taskId}/steps/order`, {
+      method: "PUT",
+      body: JSON.stringify({ step_ids: stepIds }),
+    }),
   setStepDone: (stepId: number, done: boolean) =>
     request<Step>(`/steps/${stepId}`, { method: "PATCH", body: JSON.stringify({ done }) }),
   deleteTask: (taskId: number) => request<void>(`/tasks/${taskId}`, { method: "DELETE" }),

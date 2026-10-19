@@ -1,14 +1,18 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import Bolt from "./Bolt";
-import type { Task } from "../api";
+import type { Step, Task } from "../api";
 
 interface Props {
   task: Task;
   onClose: () => void;
   onToggleStep: (stepId: number, done: boolean) => void;
+  onAddStep: (task: Task, text: string) => void;
+  onReorder: (task: Task, stepIds: number[]) => void;
 }
 
-export default function TaskModal({ task, onClose, onToggleStep }: Props) {
+export default function TaskModal({ task, onClose, onToggleStep, onAddStep, onReorder }: Props) {
+  const [editing, setEditing] = useState(false);
+  const [text, setText] = useState("");
   const closeRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
@@ -20,6 +24,53 @@ export default function TaskModal({ task, onClose, onToggleStep }: Props) {
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
 
+  // Steps still being saved have placeholder (negative) ids and can't be moved yet.
+  const canEdit = task.id > 0;
+  const canMove = task.steps.every((s) => s.id > 0);
+
+  // Drag to reorder: `from` is the dragged step's index, `over` where it would land.
+  // Row midpoints are measured once when the drag starts so the preview can't flicker.
+  const [drag, setDrag] = useState<{ from: number; over: number } | null>(null);
+  const rows = useRef<(HTMLLIElement | null)[]>([]);
+  const mids = useRef<number[]>([]);
+
+  const moved = (from: number, to: number): Step[] => {
+    const list = [...task.steps];
+    list.splice(to, 0, ...list.splice(from, 1));
+    return list;
+  };
+  const shown = drag ? moved(drag.from, drag.over) : task.steps;
+
+  const startDrag = (e: ReactPointerEvent<HTMLButtonElement>, index: number) => {
+    if (!canMove || task.steps.length < 2) return;
+    e.currentTarget.setPointerCapture(e.pointerId);
+    mids.current = task.steps.map((_, i) => {
+      const r = rows.current[i]?.getBoundingClientRect();
+      return r ? r.top + r.height / 2 : 0;
+    });
+    setDrag({ from: index, over: index });
+  };
+
+  const dragOver = (e: ReactPointerEvent<HTMLButtonElement>) => {
+    if (!drag) return;
+    const over = mids.current.filter((m, i) => i !== drag.from && m < e.clientY).length;
+    if (over !== drag.over) setDrag({ from: drag.from, over });
+  };
+
+  const endDrag = () => {
+    if (drag && drag.from !== drag.over) {
+      onReorder(task, moved(drag.from, drag.over).map((s) => s.id));
+    }
+    setDrag(null);
+  };
+
+  const addStep = () => {
+    const value = text.trim();
+    if (!value) return;
+    setText("");
+    onAddStep(task, value);
+  };
+
   return (
     <div className="modal-backdrop" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
       <div className="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
@@ -28,6 +79,16 @@ export default function TaskModal({ task, onClose, onToggleStep }: Props) {
             <Bolt size={22} />
             <span>{task.title}</span>
           </h2>
+          {canEdit && (
+            <button
+              type="button"
+              className={editing ? "edit-toggle active" : "edit-toggle"}
+              onClick={() => setEditing((v) => !v)}
+              aria-pressed={editing}
+            >
+              {editing ? "Done" : "Edit"}
+            </button>
+          )}
           <button
             ref={closeRef}
             type="button"
@@ -40,12 +101,22 @@ export default function TaskModal({ task, onClose, onToggleStep }: Props) {
             </svg>
           </button>
         </div>
-        {task.steps.length === 0 ? (
+        {task.steps.length === 0 && !editing ? (
           <p className="muted">No steps yet.</p>
         ) : (
           <ul className="step-list">
-            {task.steps.map((s) => (
-              <li key={s.id}>
+            {shown.map((s, i) => (
+              <li
+                key={s.id}
+                ref={(el) => {
+                  // Rows are indexed by their position before the drag started.
+                  const original = task.steps.findIndex((x) => x.id === s.id);
+                  rows.current[original] = el;
+                }}
+                className={
+                  "step-item" + (editing ? " editing" : "") + (drag && i === drag.over ? " dragging" : "")
+                }
+              >
                 <label className={s.done ? "step done" : "step"}>
                   <span className="step-text">
                     {s.text}
@@ -62,9 +133,59 @@ export default function TaskModal({ task, onClose, onToggleStep }: Props) {
                     onChange={(e) => onToggleStep(s.id, e.target.checked)}
                   />
                 </label>
+                {editing && (
+                  <button
+                    type="button"
+                    className="drag-handle"
+                    onPointerDown={(e) => startDrag(e, task.steps.findIndex((x) => x.id === s.id))}
+                    onPointerMove={dragOver}
+                    onPointerUp={endDrag}
+                    onPointerCancel={() => setDrag(null)}
+                    onKeyDown={(e) => {
+                      const from = task.steps.findIndex((x) => x.id === s.id);
+                      const to = from + (e.key === "ArrowUp" ? -1 : e.key === "ArrowDown" ? 1 : 0);
+                      if (to === from || to < 0 || to >= task.steps.length || !canMove) return;
+                      e.preventDefault();
+                      onReorder(task, moved(from, to).map((x) => x.id));
+                    }}
+                    disabled={!canMove || task.steps.length < 2}
+                    aria-label={`Reorder "${s.text}" (drag, or use the arrow keys)`}
+                    title="Drag to reorder"
+                  >
+                    <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+                      <path
+                        d="M9 6h.01M15 6h.01M9 12h.01M15 12h.01M9 18h.01M15 18h.01"
+                        stroke="currentColor"
+                        strokeWidth="3"
+                        strokeLinecap="round"
+                      />
+                    </svg>
+                  </button>
+                )}
               </li>
             ))}
           </ul>
+        )}
+        {editing && (
+          <form
+            className="add-step"
+            onSubmit={(e) => {
+              e.preventDefault();
+              addStep();
+            }}
+          >
+            <input
+              type="text"
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              placeholder="Add a step…"
+              aria-label="Add a step"
+              autoComplete="off"
+            />
+            <button type="submit" disabled={!text.trim()}>
+              Add
+            </button>
+          </form>
         )}
       </div>
     </div>

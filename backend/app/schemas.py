@@ -19,6 +19,10 @@ class ResultCreate(BaseModel):
     text: NonEmptyText
 
 
+class StepOrder(BaseModel):
+    step_ids: list[int]
+
+
 class StepUpdate(BaseModel):
     done: bool
 
