@@ -1,0 +1,40 @@
+export type Status = "todo" | "in_progress" | "done";
+
+export interface Step {
+  id: number;
+  task_id: number;
+  text: string;
+  position: number;
+  done: boolean;
+}
+
+export interface Task {
+  id: number;
+  title: string;
+  status: Status;
+  created_at: string;
+  steps: Step[];
+}
+
+async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  const res = await fetch(`/api${path}`, {
+    ...init,
+    headers: { "Content-Type": "application/json", ...init?.headers },
+  });
+  if (!res.ok) {
+    throw new Error(`${init?.method ?? "GET"} ${path} failed (${res.status})`);
+  }
+  if (res.status === 204) return undefined as T;
+  return res.json() as Promise<T>;
+}
+
+export const api = {
+  listTasks: () => request<Task[]>("/tasks"),
+  createTask: (title: string) =>
+    request<Task>("/tasks", { method: "POST", body: JSON.stringify({ title }) }),
+  addStep: (taskId: number, text: string) =>
+    request<Step>(`/tasks/${taskId}/steps`, { method: "POST", body: JSON.stringify({ text }) }),
+  setStepDone: (stepId: number, done: boolean) =>
+    request<Step>(`/steps/${stepId}`, { method: "PATCH", body: JSON.stringify({ done }) }),
+  deleteTask: (taskId: number) => request<void>(`/tasks/${taskId}`, { method: "DELETE" }),
+};
