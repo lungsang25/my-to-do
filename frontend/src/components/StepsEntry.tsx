@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
 import { api, type Task } from "../api";
+import Bolt from "./Bolt";
 import PromptInput from "./PromptInput";
 
 interface Props {
@@ -61,9 +62,7 @@ export default function StepsEntry({ title, created, onFinish, onError }: Props)
   return (
     <div className="steps-entry">
       <h1 className="steps-task">
-        <svg className="bolt" viewBox="0 0 24 24" width="34" height="34" aria-hidden="true">
-          <path d="M13.5 2 4 13.5h6.5L9.5 22 20 9.5h-6.5L13.5 2z" />
-        </svg>
+        <Bolt size={34} />
         <span>{title}</span>
       </h1>
       <PromptInput

@@ -1,4 +1,5 @@
 import type { Status, Task } from "../api";
+import Bolt from "./Bolt";
 
 const COLUMNS: { status: Status; label: string }[] = [
   { status: "todo", label: "To Do" },
@@ -33,7 +34,10 @@ export default function Board({ tasks, onOpen, onDelete, onNew, newDisabled }: P
                 return (
                   <li key={t.id} className="task-row">
                     <button type="button" className="task-item" onClick={() => onOpen(t)}>
-                      <span>{t.title}</span>
+                      <span className="task-title">
+                        <Bolt size={16} />
+                        {t.title}
+                      </span>
                       {t.steps.length > 0 && (
                         <span className="task-progress">
                           {done}/{t.steps.length}
