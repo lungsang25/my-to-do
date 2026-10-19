@@ -1,4 +1,5 @@
 import type { Status, Task } from "../api";
+import { cap } from "../text";
 import Bolt from "./Bolt";
 
 const COLUMNS: { status: Status; label: string }[] = [
@@ -37,7 +38,7 @@ export default function Board({ tasks, onOpen, onShowResults, onDelete, onNew, n
                     <button type="button" className="task-item" onClick={() => onOpen(t)}>
                       <span className="task-title">
                         <Bolt size={16} />
-                        {t.title}
+                        {cap(t.title)}
                       </span>
                     </button>
                     {t.results.length > 0 && (

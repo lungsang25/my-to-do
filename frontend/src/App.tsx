@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { cap } from "./text";
 import { api, type Task } from "./api";
 import { useTheme } from "./theme";
 import ThemeToggle from "./components/ThemeToggle";
@@ -116,7 +117,7 @@ export default function App() {
 
   const deleteTask = async (task: Task) => {
     if (task.id < 0) return; // not saved yet; real ids arrive with the next refresh
-    if (!window.confirm(`Delete "${task.title}"?`)) return;
+    if (!window.confirm(`Delete "${cap(task.title)}"?`)) return;
     const remaining = tasks.filter((t) => t.id !== task.id);
     setTasks(remaining); // optimistic
     if (openTaskId === task.id) setOpenTaskId(null);

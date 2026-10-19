@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
+import { cap } from "../text";
 import Bolt from "./Bolt";
 import type { Step, Task } from "../api";
 
@@ -77,7 +78,7 @@ export default function TaskModal({ task, onClose, onToggleStep, onAddStep, onRe
         <div className="modal-header">
           <h2 id="modal-title">
             <Bolt size={22} />
-            <span>{task.title}</span>
+            <span>{cap(task.title)}</span>
           </h2>
           {canEdit && (
             <button
@@ -119,7 +120,7 @@ export default function TaskModal({ task, onClose, onToggleStep, onAddStep, onRe
               >
                 <label className={s.done ? "step done" : "step"}>
                   <span className="step-text">
-                    {s.text}
+                    {cap(s.text)}
                     {s.done && (
                       <svg className="step-tick" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
                         <circle cx="12" cy="12" r="10" />

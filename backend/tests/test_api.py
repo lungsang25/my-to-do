@@ -145,7 +145,7 @@ def test_reorder_steps(client):
     r = client.put(f"/api/tasks/{task_id}/steps/order", json={"step_ids": [ids[2], ids[0], ids[1]]})
     assert r.status_code == 204
     steps = client.get(f"/api/tasks/{task_id}").json()["steps"]
-    assert [s["text"] for s in steps] == ["c", "a", "b"]
+    assert [s["text"] for s in steps] == ["C", "A", "B"]
 
     # Must list every step exactly once.
     assert client.put(f"/api/tasks/{task_id}/steps/order", json={"step_ids": ids[:2]}).status_code == 422
@@ -154,4 +154,11 @@ def test_reorder_steps(client):
     # A step added afterwards goes to the end.
     client.post(f"/api/tasks/{task_id}/steps", json={"text": "d"})
     texts = [s["text"] for s in client.get(f"/api/tasks/{task_id}").json()["steps"]]
-    assert texts == ["c", "a", "b", "d"]
+    assert texts == ["C", "A", "B", "D"]
+
+
+def test_text_is_stored_capitalized(client):
+    task = client.post("/api/tasks", json={"title": "  clean my balcony"}).json()
+    assert task["title"] == "Clean my balcony"
+    step = client.post(f"/api/tasks/{task['id']}/steps", json={"text": "get broom"}).json()
+    assert step["text"] == "Get broom"

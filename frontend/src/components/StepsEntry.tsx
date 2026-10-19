@@ -1,4 +1,5 @@
 import { useRef, useState } from "react";
+import { cap } from "../text";
 import { api, type Task } from "../api";
 import Bolt from "./Bolt";
 import PromptInput from "./PromptInput";
@@ -81,7 +82,7 @@ export default function StepsEntry({ title, created, onFinish, onError }: Props)
     <div className="steps-entry">
       <h1 className="steps-task">
         <Bolt size={34} />
-        <span>{title}</span>
+        <span>{cap(title)}</span>
       </h1>
       <PromptInput
         label={
@@ -132,7 +133,7 @@ export default function StepsEntry({ title, created, onFinish, onError }: Props)
       {list.length > 0 && (
         <ol className="step-thread" aria-label={phase === "steps" ? "Steps so far" : "Results so far"}>
           {list.map((x) => (
-            <li key={x.key}>{x.text}</li>
+            <li key={x.key}>{cap(x.text)}</li>
           ))}
         </ol>
       )}

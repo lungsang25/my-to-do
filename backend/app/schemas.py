@@ -1,8 +1,17 @@
 from typing import Annotated, Literal
 
-from pydantic import BaseModel, StringConstraints
+from pydantic import AfterValidator, BaseModel, StringConstraints
 
-NonEmptyText = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=500)]
+def _capitalize(text: str) -> str:
+    return text[:1].upper() + text[1:]
+
+
+# Titles, steps and results are stored starting with a capital letter.
+NonEmptyText = Annotated[
+    str,
+    StringConstraints(strip_whitespace=True, min_length=1, max_length=500),
+    AfterValidator(_capitalize),
+]
 
 Status = Literal["todo", "in_progress", "done"]
 

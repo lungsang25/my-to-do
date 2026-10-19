@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { cap } from "../text";
 import Bolt from "./Bolt";
 import type { Task } from "../api";
 
@@ -26,7 +27,7 @@ export default function ResultModal({ task, onClose }: Props) {
         <div className="modal-header">
           <h2 id="result-title">
             <Bolt size={22} />
-            <span>{task.title}</span>
+            <span>{cap(task.title)}</span>
           </h2>
           <button ref={closeRef} type="button" className="icon-button" onClick={onClose} aria-label="Close">
             <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
@@ -37,7 +38,7 @@ export default function ResultModal({ task, onClose }: Props) {
         <p className="result-heading">When this is done…</p>
         <ul className="result-list">
           {task.results.map((r) => (
-            <li key={r.id}>{r.text}</li>
+            <li key={r.id}>{cap(r.text)}</li>
           ))}
         </ul>
       </div>
