@@ -1,24 +1,32 @@
 :root {
-  --bg: #ffffff;
+  --bg: #faf9ff;
   --fg: #1a1a1a;
   --muted: #6b6b6b;
-  --border: #d9d9d9;
+  --border: #e4e0f5;
   --border-strong: #a3a3a3;
-  --hover: #f2f2f2;
-  --accent: #2f6feb;
-  --overlay: rgba(0, 0, 0, 0.35);
+  --hover: #f0eefc;
+  --accent: #6d5efc;
+  --accent-2: #ff7ab6;
+  --surface: rgba(255, 255, 255, 0.75);
+  --glow: rgba(109, 94, 252, 0.18);
+  --shadow: 0 10px 30px -12px rgba(60, 40, 140, 0.25);
+  --overlay: rgba(20, 15, 40, 0.35);
   --error: #c62828;
   color-scheme: light;
 }
 
 :root[data-theme="dark"] {
-  --bg: #121212;
+  --bg: #121118;
   --fg: #ececec;
   --muted: #9a9a9a;
-  --border: #333333;
+  --border: #2d2a3d;
   --border-strong: #5c5c5c;
-  --hover: #1f1f1f;
-  --accent: #6ea0ff;
+  --hover: #1d1b27;
+  --accent: #9a8cff;
+  --accent-2: #ff8fc2;
+  --surface: rgba(30, 28, 44, 0.7);
+  --glow: rgba(154, 140, 255, 0.2);
+  --shadow: 0 10px 30px -12px rgba(0, 0, 0, 0.6);
   --overlay: rgba(0, 0, 0, 0.6);
   --error: #ff7b7b;
   color-scheme: dark;
@@ -34,9 +42,13 @@ html,
 body {
   margin: 0;
   min-height: 100%;
-  background: var(--bg);
+  background:
+    radial-gradient(600px 400px at 15% -5%, var(--glow), transparent 70%),
+    radial-gradient(500px 360px at 95% 5%, rgba(255, 122, 182, 0.12), transparent 70%),
+    var(--bg);
+  background-attachment: fixed;
   color: var(--fg);
-  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   font-size: 16px;
   line-height: 1.5;
 }
@@ -129,8 +141,13 @@ button {
 
 .prompt-label {
   display: block;
-  font-size: 1.25rem;
-  font-weight: 500;
+  font-size: 1.6rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  background: linear-gradient(90deg, var(--fg) 40%, var(--accent));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }
 
 .prompt-field {
@@ -139,10 +156,13 @@ button {
 
 .prompt-field input {
   width: 100%;
-  padding: 12px 52px 12px 14px;
-  border: 1px solid var(--border-strong);
-  border-radius: 10px;
-  background: transparent;
+  padding: 16px 60px 16px 20px;
+  border: 1.5px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  font-size: 1.05rem;
+  transition: border-color 0.2s, box-shadow 0.2s;
   color: var(--fg);
   font: inherit;
   outline: none;
@@ -150,6 +170,7 @@ button {
 
 .prompt-field input:focus {
   border-color: var(--accent);
+  box-shadow: 0 0 0 4px var(--glow), var(--shadow);
 }
 
 .prompt-field input:disabled {
@@ -159,25 +180,25 @@ button {
 .enter-key {
   position: absolute;
   top: 50%;
-  right: 8px;
+  right: 12px;
   transform: translateY(-50%);
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 34px;
-  height: 28px;
+  width: 38px;
+  height: 34px;
   padding: 0;
-  border: 1px solid var(--border-strong);
-  border-bottom-width: 2px;
-  border-radius: 6px;
-  background: var(--bg);
-  color: var(--muted);
+  border: none;
+  border-radius: 10px;
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  color: #fff;
   cursor: pointer;
+  transition: transform 0.15s, filter 0.15s;
 }
 
 .enter-key:hover:not(:disabled) {
-  color: var(--fg);
-  background: var(--hover);
+  transform: translateY(-50%) scale(1.08);
+  filter: brightness(1.08);
 }
 
 .prompt-actions {
@@ -241,6 +262,7 @@ button {
   border: 2px solid var(--accent);
   border-radius: 50%;
   background: var(--bg);
+  box-shadow: 0 0 0 3px var(--glow);
 }
 
 /* Thread to the next node */
@@ -251,7 +273,7 @@ button {
   top: calc(0.45em + 10px);
   bottom: -0.45em;
   width: 2px;
-  background: var(--border-strong);
+  background: linear-gradient(var(--accent), var(--border));
 }
 
 @keyframes step-in {
@@ -306,9 +328,10 @@ button {
   margin-top: -6px;
   transform: translateX(-24px); /* nudge left without shifting the columns */
   padding: 6px 12px;
-  border: 1px solid var(--border-strong);
-  border-radius: 8px;
-  background: transparent;
+  border: 1.5px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
   font-size: 0.875rem;
   font-weight: 500;
   cursor: pointer;
@@ -331,9 +354,9 @@ button {
 }
 
 .column-title {
-  margin: 0 0 8px;
-  padding-bottom: 8px;
-  border-bottom: 1px solid var(--border);
+  margin: 0 0 10px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid var(--border);
   font-size: 0.8rem;
   font-weight: 600;
   letter-spacing: 0.06em;
@@ -353,22 +376,26 @@ button {
   align-items: baseline;
   gap: 12px;
   width: 100%;
-  padding: 8px 10px;
-  border: none;
-  border-radius: 6px;
-  background: none;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
   text-align: left;
   cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s;
 }
 
 .task-item:hover {
-  background: var(--hover);
+  transform: translateY(-2px);
+  border-color: var(--accent);
+  box-shadow: var(--shadow);
 }
 
 .task-row {
   display: flex;
   align-items: center;
   gap: 4px;
+  margin-bottom: 8px;
 }
 
 .task-row .task-item {
@@ -426,8 +453,9 @@ button {
   overflow-y: auto;
   padding: 20px 24px 24px;
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: 20px;
   background: var(--bg);
+  box-shadow: 0 30px 60px -20px rgba(40, 20, 120, 0.4);
   color: var(--fg);
 }
 

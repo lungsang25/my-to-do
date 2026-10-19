@@ -125,7 +125,7 @@ export default function App() {
               />
             ) : showPrompt ? (
               <PromptInput
-                label="What is your top priority to do?"
+                label="What is your top priority today ?"
                 value={priority}
                 onChange={setPriority}
                 onSubmit={submitPriority}
