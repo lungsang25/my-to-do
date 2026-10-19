@@ -44,4 +44,17 @@ cd backend
 | PATCH | `/api/steps/{id}` | `{ "done": true }` | Check or uncheck a step |
 | DELETE | `/api/tasks/{id}` | | Delete a task and its steps |
 
-Set `TODO_DB_PATH` to use a different database file.
+Set `TODO_DB_PATH` to use a different SQLite file. Set `DATABASE_URL` to a Postgres connection string to use Postgres instead (this is what production does).
+
+To also run the tests against Postgres, point `TEST_DATABASE_URL` at a throwaway database (its `tasks` and `steps` tables are dropped before each test):
+
+```bash
+TEST_DATABASE_URL=postgresql://user:pass@localhost/todo_test .venv/bin/python -m pytest
+```
+
+## Deploy to Vercel
+
+The repo deploys as two Vercel projects, both imported from this repo:
+
+1. **Backend**: name the project `my-to-do-backend`, set Root Directory to `backend`. In the project's Storage tab, add a Neon Postgres database. This sets `DATABASE_URL`. Redeploy. Tables are created on the first request.
+2. **Frontend**: set Root Directory to `frontend` (framework: Vite). [`frontend/vercel.json`](frontend/vercel.json) rewrites `/api/*` to `https://my-to-do-backend.vercel.app`; if the backend got a different URL, update it there.

@@ -1,10 +1,30 @@
+import os
+
 import pytest
 from fastapi.testclient import TestClient
 
+# Every test runs against SQLite, and also against Postgres when TEST_DATABASE_URL is set.
+# The Postgres database's tasks/steps tables are dropped before each test.
+TEST_DATABASE_URL = os.environ.get("TEST_DATABASE_URL")
 
-@pytest.fixture
-def client(tmp_path, monkeypatch):
-    monkeypatch.setenv("TODO_DB_PATH", str(tmp_path / "test.db"))
+
+@pytest.fixture(params=["sqlite", "postgres"])
+def client(request, tmp_path, monkeypatch):
+    from app import db
+
+    if request.param == "postgres":
+        if not TEST_DATABASE_URL:
+            pytest.skip("TEST_DATABASE_URL not set")
+        import psycopg
+
+        with psycopg.connect(TEST_DATABASE_URL) as conn:
+            conn.execute("DROP TABLE IF EXISTS steps, tasks")
+        monkeypatch.setenv("DATABASE_URL", TEST_DATABASE_URL)
+        db._initialized.discard(TEST_DATABASE_URL)
+    else:
+        monkeypatch.delenv("DATABASE_URL", raising=False)
+        monkeypatch.setenv("TODO_DB_PATH", str(tmp_path / "test.db"))
+
     from app.main import app
 
     with TestClient(app) as c:
