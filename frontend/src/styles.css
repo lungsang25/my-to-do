@@ -141,7 +141,7 @@ button {
 
 .prompt-label {
   display: block;
-  font-size: 1.6rem;
+  font-size: 1.3rem;
   font-weight: 700;
   letter-spacing: -0.02em;
   background: linear-gradient(90deg, var(--fg) 40%, var(--accent));
@@ -234,8 +234,57 @@ button {
 }
 
 .steps-task {
-  margin: 0 0 24px;
-  color: var(--muted);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0 0 28px;
+  font-size: 2.1rem;
+  font-weight: 800;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  overflow-wrap: anywhere;
+}
+
+.steps-task span {
+  background: linear-gradient(90deg, var(--fg) 30%, var(--accent-2));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.bolt {
+  flex-shrink: 0;
+  fill: #ffd54a;
+  stroke: #ffb300;
+  stroke-width: 1;
+  stroke-linejoin: round;
+  filter: drop-shadow(0 0 8px rgba(255, 196, 0, 0.7));
+  transform-origin: 50% 50%;
+  animation: bolt-zap 2.4s ease-in-out infinite;
+}
+
+@keyframes bolt-zap {
+  0%, 60%, 100% {
+    transform: scale(1) rotate(0);
+    filter: drop-shadow(0 0 6px rgba(255, 196, 0, 0.5));
+  }
+  66% {
+    transform: scale(1.25) rotate(-8deg);
+    filter: drop-shadow(0 0 16px rgba(255, 220, 80, 1));
+  }
+  72% {
+    transform: scale(0.95) rotate(5deg);
+  }
+  78% {
+    transform: scale(1.15) rotate(-4deg);
+    filter: drop-shadow(0 0 14px rgba(255, 220, 80, 0.95));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bolt {
+    animation: none;
+  }
 }
 
 /* Steps typed so far, joined by a vertical thread (first step at the top). */

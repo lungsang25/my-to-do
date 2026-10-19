@@ -60,7 +60,12 @@ export default function StepsEntry({ title, created, onFinish, onError }: Props)
 
   return (
     <div className="steps-entry">
-      <p className="steps-task">{title}</p>
+      <h1 className="steps-task">
+        <svg className="bolt" viewBox="0 0 24 24" width="34" height="34" aria-hidden="true">
+          <path d="M13.5 2 4 13.5h6.5L9.5 22 20 9.5h-6.5L13.5 2z" />
+        </svg>
+        <span>{title}</span>
+      </h1>
       <PromptInput
         label={steps.length === 0 ? "Write the steps to achieve it" : "Next step?"}
         value={value}
