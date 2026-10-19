@@ -56,5 +56,5 @@ TEST_DATABASE_URL=postgresql://user:pass@localhost/todo_test .venv/bin/python -m
 
 The repo deploys as two Vercel projects, both imported from this repo:
 
-1. **Backend**: name the project `my-to-do-backend`, set Root Directory to `backend`. In the project's Storage tab, add a Neon Postgres database. This sets `DATABASE_URL`. Redeploy. Tables are created on the first request.
-2. **Frontend**: set Root Directory to `frontend` (framework: Vite). [`frontend/vercel.json`](frontend/vercel.json) rewrites `/api/*` to `https://my-to-do-backend.vercel.app`; if the backend got a different URL, update it there.
+1. **Backend**: set Root Directory to `backend`. In the project's Storage tab, add a Neon Postgres database. This sets `DATABASE_URL`. Redeploy. Tables are created on the first request.
+2. **Frontend**: set Root Directory to `frontend` (framework: Vite). [`frontend/vercel.json`](frontend/vercel.json) rewrites `/api/*` to `https://my-to-do-backend-lake.vercel.app`; if the backend got a different URL, update it there.
