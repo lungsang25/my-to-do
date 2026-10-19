@@ -9,12 +9,13 @@ const COLUMNS: { status: Status; label: string }[] = [
 interface Props {
   tasks: Task[];
   onOpen: (task: Task) => void;
+  onShowResults: (task: Task) => void;
   onDelete: (task: Task) => void;
   onNew: () => void;
   newDisabled?: boolean;
 }
 
-export default function Board({ tasks, onOpen, onDelete, onNew, newDisabled }: Props) {
+export default function Board({ tasks, onOpen, onShowResults, onDelete, onNew, newDisabled }: Props) {
   return (
     <section className="board" aria-label="Task board">
       <button type="button" className="new-button" onClick={onNew} disabled={newDisabled}>
@@ -38,12 +39,17 @@ export default function Board({ tasks, onOpen, onDelete, onNew, newDisabled }: P
                         <Bolt size={16} />
                         {t.title}
                       </span>
-                      {t.steps.length > 0 && (
-                        <span className="task-progress">
-                          {done}/{t.steps.length}
-                        </span>
-                      )}
                     </button>
+                    {t.results.length > 0 && (
+                      <button type="button" className="result-chip" onClick={() => onShowResults(t)}>
+                        Result
+                      </button>
+                    )}
+                    {t.steps.length > 0 && (
+                      <span className="task-progress">
+                        {done}/{t.steps.length}
+                      </span>
+                    )}
                     <button
                       type="button"
                       className="icon-button task-delete"

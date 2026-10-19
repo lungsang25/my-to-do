@@ -4,7 +4,7 @@ from fastapi import Depends, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
 from .db import Conn, get_conn
-from .schemas import Step, StepCreate, StepUpdate, Task, TaskCreate
+from .schemas import Result, ResultCreate, Step, StepCreate, StepUpdate, Task, TaskCreate
 
 app = FastAPI(title="My To-Do")
 
@@ -26,6 +26,12 @@ def _step(row: Any) -> Step:
     )
 
 
+def _result(row: Any) -> Result:
+    return Result(
+        id=row["id"], task_id=row["task_id"], text=row["text"], position=row["position"]
+    )
+
+
 def _sync_status(conn: Conn, task_id: int) -> None:
     """A task is Done once it has steps and every one is checked; otherwise it is To Do."""
     row = conn.execute(
@@ -44,7 +50,12 @@ def _load_task(conn: Conn, task_id: int) -> Task:
     steps = conn.execute(
         "SELECT * FROM steps WHERE task_id = ? ORDER BY position", (task_id,)
     ).fetchall()
-    return Task(**dict(row), steps=[_step(s) for s in steps])
+    results = conn.execute(
+        "SELECT * FROM results WHERE task_id = ? ORDER BY position", (task_id,)
+    ).fetchall()
+    return Task(
+        **dict(row), steps=[_step(s) for s in steps], results=[_result(r) for r in results]
+    )
 
 
 @app.get("/api/tasks", response_model=list[Task])
@@ -54,7 +65,14 @@ def list_tasks(conn: Conn = Depends(get_conn)) -> list[Task]:
     by_task: dict[int, list[Step]] = {}
     for s in steps:
         by_task.setdefault(s["task_id"], []).append(_step(s))
-    return [Task(**dict(t), steps=by_task.get(t["id"], [])) for t in tasks]
+    results = conn.execute("SELECT * FROM results ORDER BY task_id, position").fetchall()
+    results_by_task: dict[int, list[Result]] = {}
+    for r in results:
+        results_by_task.setdefault(r["task_id"], []).append(_result(r))
+    return [
+        Task(**dict(t), steps=by_task.get(t["id"], []), results=results_by_task.get(t["id"], []))
+        for t in tasks
+    ]
 
 
 @app.post("/api/tasks", response_model=Task, status_code=201)
@@ -85,6 +103,24 @@ def add_step(
     row = conn.execute("SELECT * FROM steps WHERE id = ?", (step_id,)).fetchone()
     _sync_status(conn, task_id)
     return _step(row)
+
+
+@app.post("/api/tasks/{task_id}/results", response_model=Result, status_code=201)
+def add_result(
+    task_id: int, body: ResultCreate, conn: Conn = Depends(get_conn)
+) -> Result:
+    if conn.execute("SELECT 1 FROM tasks WHERE id = ?", (task_id,)).fetchone() is None:
+        raise HTTPException(status_code=404, detail="Task not found")
+    next_pos = conn.execute(
+        "SELECT COALESCE(MAX(position) + 1, 0) AS next_pos FROM results WHERE task_id = ?",
+        (task_id,),
+    ).fetchone()["next_pos"]
+    result_id = conn.insert(
+        "INSERT INTO results (task_id, text, position) VALUES (?, ?, ?)",
+        (task_id, body.text, next_pos),
+    )
+    row = conn.execute("SELECT * FROM results WHERE id = ?", (result_id,)).fetchone()
+    return _result(row)
 
 
 @app.patch("/api/steps/{step_id}", response_model=Step)

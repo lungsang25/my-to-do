@@ -15,6 +15,10 @@ class StepCreate(BaseModel):
     text: NonEmptyText
 
 
+class ResultCreate(BaseModel):
+    text: NonEmptyText
+
+
 class StepUpdate(BaseModel):
     done: bool
 
@@ -27,9 +31,17 @@ class Step(BaseModel):
     done: bool
 
 
+class Result(BaseModel):
+    id: int
+    task_id: int
+    text: str
+    position: int
+
+
 class Task(BaseModel):
     id: int
     title: str
     status: Status
     created_at: str
     steps: list[Step]
+    results: list[Result] = []

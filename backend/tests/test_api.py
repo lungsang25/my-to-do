@@ -18,7 +18,7 @@ def client(request, tmp_path, monkeypatch):
         import psycopg
 
         with psycopg.connect(TEST_DATABASE_URL) as conn:
-            conn.execute("DROP TABLE IF EXISTS steps, tasks")
+            conn.execute("DROP TABLE IF EXISTS results, steps, tasks")
         monkeypatch.setenv("DATABASE_URL", TEST_DATABASE_URL)
         db._initialized.discard(TEST_DATABASE_URL)
     else:
@@ -119,3 +119,18 @@ def test_rejects_empty_text(client):
     assert client.post("/api/tasks", json={"title": "   "}).status_code == 422
     task_id = client.post("/api/tasks", json={"title": "Hackathon"}).json()["id"]
     assert client.post(f"/api/tasks/{task_id}/steps", json={"text": ""}).status_code == 422
+
+
+def test_results_are_saved_in_order_and_deleted_with_task(client):
+    task_id = client.post("/api/tasks", json={"title": "Balcony"}).json()["id"]
+    assert client.get(f"/api/tasks/{task_id}").json()["results"] == []
+    for text in ["Fresh air", "Proud of it"]:
+        assert client.post(f"/api/tasks/{task_id}/results", json={"text": text}).status_code == 201
+
+    task = client.get("/api/tasks").json()[0]
+    assert [r["text"] for r in task["results"]] == ["Fresh air", "Proud of it"]
+    assert [r["position"] for r in task["results"]] == [0, 1]
+
+    assert client.post("/api/tasks/999/results", json={"text": "x"}).status_code == 404
+    assert client.post(f"/api/tasks/{task_id}/results", json={"text": " "}).status_code == 422
+    assert client.delete(f"/api/tasks/{task_id}").status_code == 204

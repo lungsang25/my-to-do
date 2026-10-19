@@ -5,6 +5,7 @@ import ThemeToggle from "./components/ThemeToggle";
 import PromptInput from "./components/PromptInput";
 import StepsEntry from "./components/StepsEntry";
 import Board from "./components/Board";
+import ResultModal from "./components/ResultModal";
 import TaskModal from "./components/TaskModal";
 
 export default function App() {
@@ -18,6 +19,7 @@ export default function App() {
   const [showPrompt, setShowPrompt] = useState(false);
   const [priority, setPriority] = useState("");
   const [openTaskId, setOpenTaskId] = useState<number | null>(null);
+  const [resultTaskId, setResultTaskId] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const refresh = useCallback(async (): Promise<Task[] | null> => {
@@ -86,6 +88,7 @@ export default function App() {
     const remaining = tasks.filter((t) => t.id !== task.id);
     setTasks(remaining); // optimistic
     if (openTaskId === task.id) setOpenTaskId(null);
+    if (resultTaskId === task.id) setResultTaskId(null);
     if (remaining.length === 0) setShowPrompt(true); // board disappears; match first visit
     try {
       await api.deleteTask(task.id);
@@ -96,6 +99,8 @@ export default function App() {
   };
 
   const closeModal = useCallback(() => setOpenTaskId(null), []);
+  const closeResults = useCallback(() => setResultTaskId(null), []);
+  const resultTask = tasks.find((t) => t.id === resultTaskId) ?? null;
   const openTask = tasks.find((t) => t.id === openTaskId) ?? null;
   const showBoard = tasks.length > 0;
 
@@ -108,6 +113,7 @@ export default function App() {
           <Board
             tasks={tasks}
             onOpen={(t) => setOpenTaskId(t.id)}
+            onShowResults={(t) => setResultTaskId(t.id)}
             onDelete={deleteTask}
             onNew={() => setShowPrompt(true)}
             newDisabled={currentTask !== null}
@@ -149,6 +155,7 @@ export default function App() {
         )}
       </main>
 
+      {resultTask && <ResultModal task={resultTask} onClose={closeResults} />}
       {openTask && <TaskModal task={openTask} onClose={closeModal} onToggleStep={toggleStep} />}
     </>
   );

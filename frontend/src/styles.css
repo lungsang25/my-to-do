@@ -425,26 +425,30 @@ button {
   align-items: baseline;
   gap: 12px;
   width: 100%;
-  padding: 12px 14px;
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  background: var(--surface);
+  padding: 12px 6px 12px 14px;
+  border: none;
+  background: none;
   text-align: left;
   cursor: pointer;
-  transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s;
 }
 
-.task-item:hover {
-  transform: translateY(-2px);
-  border-color: var(--accent);
-  box-shadow: var(--shadow);
-}
-
+/* The row is the card, so the Result chip and delete button sit inside it. */
 .task-row {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
   margin-bottom: 8px;
+  padding-right: 6px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s;
+}
+
+.task-row:hover {
+  transform: translateY(-2px);
+  border-color: var(--accent);
+  box-shadow: var(--shadow);
 }
 
 .task-row .task-item {
@@ -476,6 +480,7 @@ button {
 }
 
 .task-progress {
+  padding: 0 4px;
   flex-shrink: 0;
   color: var(--muted);
   font-size: 0.8rem;
@@ -644,4 +649,49 @@ button {
   display: flex;
   align-items: center;
   gap: 10px;
+}
+
+/* ---------- Results ---------- */
+
+.result-chip {
+  flex-shrink: 0;
+  padding: 3px 10px;
+  border: 1px solid var(--accent);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--accent);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.result-chip:hover {
+  background: var(--accent);
+  color: var(--bg);
+}
+
+.result-heading {
+  margin: 0 0 12px;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.result-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.result-list li {
+  position: relative;
+  padding: 8px 4px 8px 28px;
+}
+
+.result-list li::before {
+  content: "★";
+  position: absolute;
+  left: 4px;
+  color: #ffc83d;
 }

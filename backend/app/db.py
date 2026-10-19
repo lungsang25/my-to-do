@@ -26,6 +26,15 @@ CREATE TABLE IF NOT EXISTS steps (
 );
 
 CREATE INDEX IF NOT EXISTS idx_steps_task ON steps(task_id, position);
+
+CREATE TABLE IF NOT EXISTS results (
+    id       INTEGER PRIMARY KEY AUTOINCREMENT,
+    task_id  INTEGER NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
+    text     TEXT NOT NULL,
+    position INTEGER NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_results_task ON results(task_id, position);
 """
 
 # Same shape as the SQLite schema; created_at uses the same "YYYY-MM-DD HH:MM:SS" UTC text.
@@ -48,6 +57,15 @@ CREATE TABLE IF NOT EXISTS steps (
 );
 
 CREATE INDEX IF NOT EXISTS idx_steps_task ON steps(task_id, position);
+
+CREATE TABLE IF NOT EXISTS results (
+    id       SERIAL PRIMARY KEY,
+    task_id  INTEGER NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
+    text     TEXT NOT NULL,
+    position INTEGER NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_results_task ON results(task_id, position);
 """
 
 # Re-derive every task's status from its steps (Done = has steps, all checked).
