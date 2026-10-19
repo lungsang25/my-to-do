@@ -1,49 +1,71 @@
-import { useState } from "react";
-import { api, type Step, type Task } from "../api";
+import { useRef, useState } from "react";
+import { api, type Task } from "../api";
 import PromptInput from "./PromptInput";
 
 interface Props {
-  task: Task;
-  onFinish: () => void;
+  title: string;
+  /** Resolves once the server has created the task; steps are saved after it. */
+  created: Promise<Task>;
+  /** Called immediately with a local copy of the task; `saved` resolves when all saves are done. */
+  onFinish: (draft: Task, saved: Promise<void>) => void;
   onError: (message: string) => void;
 }
 
-export default function StepsEntry({ task, onFinish, onError }: Props) {
-  const [value, setValue] = useState("");
-  const [steps, setSteps] = useState<Step[]>([]);
-  const [busy, setBusy] = useState(false);
+interface DraftStep {
+  key: number;
+  text: string;
+}
 
-  const saveStep = async (): Promise<boolean> => {
+let nextKey = 1;
+
+export default function StepsEntry({ title, created, onFinish, onError }: Props) {
+  const [value, setValue] = useState("");
+  const [steps, setSteps] = useState<DraftStep[]>([]);
+  // Steps show up right away; saves run one after another, in the order typed. Never rejects.
+  const queue = useRef<Promise<void>>(Promise.resolve());
+
+  const saveStep = (): DraftStep[] => {
     const text = value.trim();
-    if (!text) return true;
-    setBusy(true);
-    try {
-      const step = await api.addStep(task.id, text);
-      setValue("");
-      setSteps((prev) => [...prev, step]);
-      return true;
-    } catch (e) {
-      onError((e as Error).message);
-      return false;
-    } finally {
-      setBusy(false);
-    }
+    if (!text) return steps;
+    const step = { key: nextKey++, text };
+    const all = [...steps, step];
+    setValue("");
+    setSteps(all);
+    queue.current = queue.current.then(async () => {
+      try {
+        await api.addStep((await created).id, text);
+      } catch (e) {
+        setSteps((prev) => prev.filter((s) => s.key !== step.key));
+        onError((e as Error).message);
+      }
+    });
+    return all;
   };
 
-  const finish = async () => {
+  const finish = () => {
     // Save whatever is still typed in the field before finishing.
-    if (await saveStep()) onFinish();
+    const all = saveStep();
+    const taskId = -Date.now(); // placeholder ids until the board refreshes from the server
+    onFinish(
+      {
+        id: taskId,
+        title,
+        status: "todo",
+        created_at: "",
+        steps: all.map((s, i) => ({ id: -s.key, task_id: taskId, text: s.text, position: i, done: false })),
+      },
+      queue.current,
+    );
   };
 
   return (
     <div className="steps-entry">
-      <p className="steps-task">{task.title}</p>
+      <p className="steps-task">{title}</p>
       <PromptInput
         label={steps.length === 0 ? "Write the steps to achieve it" : "Next step?"}
         value={value}
         onChange={setValue}
         onSubmit={saveStep}
-        disabled={busy}
       >
         <div className="prompt-actions">
           {steps.length > 0 && (
@@ -51,7 +73,7 @@ export default function StepsEntry({ task, onFinish, onError }: Props) {
               {steps.length} step{steps.length === 1 ? "" : "s"} saved
             </span>
           )}
-          <button type="button" className="link-button" onClick={finish} disabled={busy}>
+          <button type="button" className="link-button" onClick={finish}>
             Finish
           </button>
         </div>
@@ -59,7 +81,7 @@ export default function StepsEntry({ task, onFinish, onError }: Props) {
       {steps.length > 0 && (
         <ol className="step-thread" aria-label="Steps so far">
           {steps.map((s) => (
-            <li key={s.id}>{s.text}</li>
+            <li key={s.key}>{s.text}</li>
           ))}
         </ol>
       )}

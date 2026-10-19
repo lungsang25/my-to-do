@@ -11,10 +11,12 @@ export default function App() {
   const { theme, toggle } = useTheme();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loaded, setLoaded] = useState(false);
-  const [currentTask, setCurrentTask] = useState<Task | null>(null);
+  // The task whose steps are being entered; `created` resolves once the server has saved it.
+  const [currentTask, setCurrentTask] = useState<{ title: string; created: Promise<Task> } | null>(
+    null,
+  );
   const [showPrompt, setShowPrompt] = useState(false);
   const [priority, setPriority] = useState("");
-  const [busy, setBusy] = useState(false);
   const [openTaskId, setOpenTaskId] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -37,26 +39,29 @@ export default function App() {
     refresh().then((list) => setShowPrompt(!list || list.length === 0));
   }, [refresh]);
 
-  const submitPriority = async () => {
-    setBusy(true);
-    try {
-      setCurrentTask(await api.createTask(priority.trim()));
-      setPriority("");
-      setError(null);
-    } catch (e) {
+  const submitPriority = () => {
+    // Move straight on to the steps; the task is created in the background.
+    const title = priority.trim();
+    const created = api.createTask(title);
+    created.catch((e) => {
       setError((e as Error).message);
-    } finally {
-      setBusy(false);
-    }
+      setCurrentTask(null);
+      setPriority(title); // let them try again without retyping
+    });
+    setCurrentTask({ title, created });
+    setPriority("");
+    setError(null);
   };
 
-  const finishSteps = async () => {
+  const finishSteps = (draft: Task, saved: Promise<void>) => {
     setCurrentTask(null);
     setShowPrompt(false);
-    await refresh();
+    setTasks((prev) => [...prev, draft]); // optimistic
+    saved.then(() => refresh()); // swap in the server's copy, with real ids
   };
 
   const toggleStep = async (stepId: number, done: boolean) => {
+    if (stepId < 0) return; // not saved yet; real ids arrive with the next refresh
     // Mirrors the backend rule: a task is Done once every step is checked.
     const setDone = (value: boolean) =>
       setTasks((prev) =>
@@ -76,6 +81,7 @@ export default function App() {
   };
 
   const deleteTask = async (task: Task) => {
+    if (task.id < 0) return; // not saved yet; real ids arrive with the next refresh
     if (!window.confirm(`Delete "${task.title}"?`)) return;
     const remaining = tasks.filter((t) => t.id !== task.id);
     setTasks(remaining); // optimistic
@@ -111,14 +117,18 @@ export default function App() {
         {loaded && (showPrompt || currentTask || error) && (
           <div className="center">
             {currentTask ? (
-              <StepsEntry task={currentTask} onFinish={finishSteps} onError={setError} />
+              <StepsEntry
+                title={currentTask.title}
+                created={currentTask.created}
+                onFinish={finishSteps}
+                onError={setError}
+              />
             ) : showPrompt ? (
               <PromptInput
                 label="What is your top priority to do?"
                 value={priority}
                 onChange={setPriority}
                 onSubmit={submitPriority}
-                disabled={busy}
                 // Only closable when the board (and its New button) is there to reopen it.
                 onClose={
                   showBoard
