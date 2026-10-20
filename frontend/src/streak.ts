@@ -8,12 +8,12 @@ export interface Streak {
 }
 
 /** The server stores times as UTC "YYYY-MM-DD HH:MM:SS". */
-function parseUtc(value: string): Date {
+export function parseUtc(value: string): Date {
   return new Date(value.replace(" ", "T") + "Z");
 }
 
 /** Local calendar day, so the streak follows the user's own midnight. */
-function dayKey(date: Date): string {
+export function dayKey(date: Date): string {
   const pad = (n: number) => String(n).padStart(2, "0");
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
 }

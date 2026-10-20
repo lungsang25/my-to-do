@@ -97,7 +97,7 @@ button {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  padding: 72px 16px 32px;
+  padding: 72px 16px 140px; /* room for the timer dock */
 }
 
 /* Anchored from the top (not vertically centered) so the field stays put
@@ -367,17 +367,25 @@ button {
     grid-template-columns: 1fr;
   }
 
-  .new-button {
+  .board-actions {
     justify-self: start;
   }
+}
+
+.board-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 18px;
+  min-width: 110px;
+  margin-top: -6px;
+  transform: translateX(-120px); /* nudge left without shifting the columns */
 }
 
 .new-button {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  margin-top: -6px;
-  transform: translateX(-24px); /* nudge left without shifting the columns */
   padding: 6px 12px;
   border: 1.5px solid var(--border);
   border-radius: 999px;
@@ -393,29 +401,78 @@ button {
   color: var(--accent);
 }
 
+/* Side buttons: plain text with an icon, no box. */
+.board-actions .new-button {
+  padding: 6px 4px;
+  border-color: transparent;
+  border-radius: 8px;
+  background: transparent;
+  box-shadow: none;
+}
+
 .new-button:disabled {
   opacity: 0.4;
   cursor: default;
 }
 
 @media (max-width: 640px) {
-  .new-button {
+  .board-actions {
     transform: none; /* keep inside the 16px phone gutter */
   }
 }
 
 .column-title {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin: 0 0 10px;
-  padding-bottom: 10px;
-  border-bottom: 2px solid var(--border);
-  font-size: 0.8rem;
-  font-weight: 600;
-  letter-spacing: 0.06em;
+  margin: 0 0 24px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+  --tone: #475569;
+}
+
+.column-title-done {
+  --tone: #2f6f4f;
+}
+
+:root[data-theme="dark"] .column-title {
+  --tone: #94a3b8;
+}
+
+:root[data-theme="dark"] .column-title-done {
+  --tone: #6fbf95;
+}
+
+/* Short solid bar in the heading's tone, sitting on the divider. */
+.column-title::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: -1px;
+  width: 36px;
+  height: 2px;
+  background: var(--tone);
+}
+
+.column-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--muted);
+  color: var(--tone);
+}
+
+.column-label svg {
+  flex-shrink: 0;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 .column-list {
@@ -787,6 +844,64 @@ button {
   color: #ffc83d;
 }
 
+/* ---------- History ---------- */
+
+.history-day + .history-day {
+  margin-top: 16px;
+}
+
+.history-date {
+  margin: 0 0 4px;
+  color: var(--muted);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.history-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.history-list > li {
+  padding: 4px;
+}
+
+.history-task summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 4px 0;
+  cursor: pointer;
+}
+
+.history-steps {
+  list-style: none;
+  margin: 4px 0 8px;
+  padding: 0 0 0 24px;
+}
+
+.history-steps li {
+  position: relative;
+  padding: 3px 0 3px 22px;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.history-steps li.is-done::before {
+  content: "✓";
+  position: absolute;
+  left: 0;
+  color: var(--accent);
+}
+
+.history-time {
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-variant-numeric: tabular-nums;
+}
+
 /* ---------- Task editing ---------- */
 
 .modal-header h2 {
@@ -892,4 +1007,106 @@ button {
 .add-step button:disabled {
   opacity: 0.4;
   cursor: default;
+}
+
+/* ---------- Timer ---------- */
+
+.timer-modal {
+  max-width: 380px;
+}
+
+.timer-presets {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+.timer-chip {
+  padding: 10px 0;
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.timer-chip:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.timer-custom {
+  display: flex;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.timer-custom input {
+  flex: 1;
+  min-width: 0;
+  padding: 8px 12px;
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg);
+  color: var(--fg);
+  font: inherit;
+}
+
+.timer-custom input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.timer-dock {
+  position: fixed;
+  bottom: 48px;
+  left: 50%;
+  z-index: 10;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 14px 12px 24px;
+  border: 1.5px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+  backdrop-filter: blur(8px);
+  box-shadow: var(--shadow);
+}
+
+.timer-dock-icon {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.timer-dock-time {
+  min-width: 4.5ch;
+  font-size: 2.2rem;
+  font-weight: 700;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.timer-dock.is-finished {
+  border-color: var(--accent);
+  animation: timer-pulse 1.2s ease-in-out infinite;
+}
+
+.timer-dock.is-finished .timer-dock-time {
+  color: var(--accent);
+}
+
+@keyframes timer-pulse {
+  50% {
+    box-shadow: 0 0 0 6px var(--glow);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .timer-dock.is-finished {
+    animation: none;
+  }
 }

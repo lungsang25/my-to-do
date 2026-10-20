@@ -9,6 +9,10 @@ import StepsEntry from "./components/StepsEntry";
 import Board from "./components/Board";
 import ResultModal from "./components/ResultModal";
 import TaskModal from "./components/TaskModal";
+import HistoryModal from "./components/HistoryModal";
+import TimerModal from "./components/TimerModal";
+import TimerDock from "./components/TimerDock";
+import { requestNotifyPermission } from "./timerAlerts";
 
 export default function App() {
   const { theme, toggle } = useTheme();
@@ -22,6 +26,17 @@ export default function App() {
   const [priority, setPriority] = useState("");
   const [openTaskId, setOpenTaskId] = useState<number | null>(null);
   const [resultTaskId, setResultTaskId] = useState<number | null>(null);
+  const [showHistory, setShowHistory] = useState(false);
+  const [showTimer, setShowTimer] = useState(false);
+  // When the running timer ends (epoch ms). Kept in localStorage so a refresh doesn't lose it.
+  const [timerEndsAt, setTimerEndsAt] = useState<number | null>(() => {
+    try {
+      const saved = Number(localStorage.getItem("timerEndsAt"));
+      return saved > 0 ? saved : null;
+    } catch {
+      return null;
+    }
+  });
   const [error, setError] = useState<string | null>(null);
 
   const refresh = useCallback(async (): Promise<Task[] | null> => {
@@ -136,6 +151,17 @@ export default function App() {
 
   const closeModal = useCallback(() => setOpenTaskId(null), []);
   const closeResults = useCallback(() => setResultTaskId(null), []);
+  const closeTimer = useCallback(() => setShowTimer(false), []);
+  const changeTimer = useCallback((endsAt: number | null) => {
+    setTimerEndsAt(endsAt);
+    try {
+      if (endsAt === null) localStorage.removeItem("timerEndsAt");
+      else localStorage.setItem("timerEndsAt", String(endsAt));
+    } catch {
+      /* storage unavailable; the timer still runs for this page view */
+    }
+  }, []);
+  const closeHistory = useCallback(() => setShowHistory(false), []);
   const resultTask = tasks.find((t) => t.id === resultTaskId) ?? null;
   const openTask = tasks.find((t) => t.id === openTaskId) ?? null;
   const showBoard = tasks.length > 0;
@@ -155,6 +181,8 @@ export default function App() {
             onShowResults={(t) => setResultTaskId(t.id)}
             onDelete={deleteTask}
             onNew={() => setShowPrompt(true)}
+            onShowHistory={() => setShowHistory(true)}
+            onShowTimer={() => setShowTimer(true)}
             newDisabled={currentTask !== null}
             streak={streak}
           />
@@ -196,6 +224,18 @@ export default function App() {
       </main>
 
       {resultTask && <ResultModal task={resultTask} onClose={closeResults} />}
+      {showHistory && <HistoryModal tasks={tasks} onClose={closeHistory} />}
+      {showTimer && (
+        <TimerModal
+          onClose={closeTimer}
+          onStart={(seconds) => {
+            requestNotifyPermission();
+            changeTimer(Date.now() + seconds * 1000);
+            setShowTimer(false);
+          }}
+        />
+      )}
+      {timerEndsAt !== null && <TimerDock endsAt={timerEndsAt} onCancel={() => changeTimer(null)} />}
       {openTask && <TaskModal
           task={openTask}
           onClose={closeModal}
