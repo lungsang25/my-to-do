@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { cap } from "./text";
-import { api, type Task } from "./api";
+import { api, type DurationState, type Task } from "./api";
 import { useTheme } from "./theme";
-import { computeStreak, nowUtc } from "./streak";
+import { computeStreak, dayKey, nowUtc, parseUtc } from "./streak";
+import { approxDays, durationLabel, periodIndex, periodName } from "./period";
 import ThemeToggle from "./components/ThemeToggle";
 import PromptInput from "./components/PromptInput";
 import StepsEntry from "./components/StepsEntry";
@@ -12,6 +13,7 @@ import TaskModal from "./components/TaskModal";
 import HistoryModal from "./components/HistoryModal";
 import TimerModal from "./components/TimerModal";
 import TimerDock from "./components/TimerDock";
+import DurationModal from "./components/DurationModal";
 import { requestNotifyPermission } from "./timerAlerts";
 
 export default function App() {
@@ -28,7 +30,10 @@ export default function App() {
   const [resultTaskId, setResultTaskId] = useState<number | null>(null);
   const [showHistory, setShowHistory] = useState(false);
   // Bumped at local midnight so the board re-evaluates which done tasks belong in History.
-  const [, setDayTick] = useState(0);
+  // (Every period starts at a local midnight, so this covers all durations.)
+  const [dayTick, setDayTick] = useState(0);
+  const [duration, setDuration] = useState<DurationState>({ active: "1d", durations: [] });
+  const [showDuration, setShowDuration] = useState(false);
   const [showTimer, setShowTimer] = useState(false);
   // When the running timer ends (epoch ms). Kept in localStorage so a refresh doesn't lose it.
   const [timerEndsAt, setTimerEndsAt] = useState<number | null>(() => {
@@ -58,6 +63,10 @@ export default function App() {
   useEffect(() => {
     // First visit (no tasks yet): start with the field. Otherwise show just the board.
     refresh().then((list) => setShowPrompt(!list || list.length === 0));
+    api
+      .getDuration()
+      .then(setDuration)
+      .catch((e) => setError((e as Error).message));
   }, [refresh]);
 
   useEffect(() => {
@@ -91,7 +100,7 @@ export default function App() {
   const finishSteps = (draft: Task, saved: Promise<void>) => {
     setCurrentTask(null);
     setShowPrompt(false);
-    setTasks((prev) => [...prev, draft]); // optimistic
+    setTasks((prev) => [...prev, { ...draft, duration: duration.active }]); // optimistic
     saved.then(() => refresh()); // swap in the server's copy, with real ids
   };
 
@@ -178,10 +187,64 @@ export default function App() {
     }
   }, []);
   const closeHistory = useCallback(() => setShowHistory(false), []);
+  const closeDuration = useCallback(() => setShowDuration(false), []);
+
+  const chooseDuration = async (key: string) => {
+    setShowDuration(false);
+    const today = dayKey(new Date());
+    // Optimistic: a duration chosen for the first time starts its periods today.
+    setDuration((prev) => ({
+      active: key,
+      durations: prev.durations.some((d) => d.key === key)
+        ? prev.durations
+        : [...prev.durations, { key, anchor: today }],
+    }));
+    try {
+      setDuration(await api.setDuration(key, today));
+    } catch (e) {
+      setError((e as Error).message);
+      api.getDuration().then(setDuration).catch(() => {});
+    }
+  };
+
+  // Where each duration's periods are counted from (today if it has never been saved).
+  const anchorOf = useCallback(
+    (key: string) => duration.durations.find((d) => d.key === key)?.anchor ?? dayKey(new Date()),
+    [duration],
+  );
+  // A done task stays on the board until its own duration's period is over.
+  const isCurrent = useCallback(
+    (t: Task) => {
+      if (t.status !== "done" || !t.completed_at) return true;
+      const anchor = anchorOf(t.duration);
+      return (
+        periodIndex(parseUtc(t.completed_at), t.duration, anchor) ===
+        periodIndex(new Date(), t.duration, anchor)
+      );
+    },
+    // dayTick: re-check when a new day (and maybe a new period) starts.
+    [anchorOf, dayTick],
+  );
+  const streakFor = useCallback((key: string) => computeStreak(tasks, key, anchorOf(key)), [tasks, anchorOf, dayTick]);
   const resultTask = tasks.find((t) => t.id === resultTaskId) ?? null;
   const openTask = tasks.find((t) => t.id === openTaskId) ?? null;
+  // Each duration is its own list: the board and History only show tasks created under the
+  // active one. The board stays up while any task exists so Duration can switch back.
+  const durationTasks = useMemo(
+    () => tasks.filter((t) => t.duration === duration.active),
+    [tasks, duration.active],
+  );
   const showBoard = tasks.length > 0;
-  const streak = useMemo(() => computeStreak(tasks), [tasks]);
+  // Durations the user has used: ones they've set, plus any that tasks were created under
+  // (e.g. the default 1 day, before any duration was ever chosen). Shortest first.
+  const durationOptions = useMemo(
+    () =>
+      [...new Set([...duration.durations.map((d) => d.key), ...tasks.map((t) => t.duration)])].sort(
+        (a, b) => approxDays(a) - approxDays(b),
+      ),
+    [duration.durations, tasks],
+  );
+  const streak = useMemo(() => streakFor(duration.active), [streakFor, duration.active]);
   // While adding a task, show only the field (the board returns when it's done or closed).
   const entering = showPrompt || currentTask !== null;
 
@@ -192,15 +255,18 @@ export default function App() {
       <main className={showBoard && !entering ? "layout with-board" : "layout"}>
         {showBoard && !entering && (
           <Board
-            tasks={tasks}
+            tasks={durationTasks}
             onOpen={(t) => setOpenTaskId(t.id)}
             onShowResults={(t) => setResultTaskId(t.id)}
             onDelete={deleteTask}
             onNew={() => setShowPrompt(true)}
             onShowHistory={() => setShowHistory(true)}
             onShowTimer={() => setShowTimer(true)}
+            onShowDuration={() => setShowDuration(true)}
             newDisabled={currentTask !== null}
             streak={streak}
+            duration={duration.active}
+            isCurrent={isCurrent}
           />
         )}
 
@@ -215,7 +281,9 @@ export default function App() {
               />
             ) : showPrompt ? (
               <PromptInput
-                label="What is your top priority today ?"
+                label={`What is your top priority ${
+                  duration.active === "1d" ? "today" : `this ${periodName(duration.active)}`
+                } ?`}
                 value={priority}
                 onChange={setPriority}
                 onSubmit={submitPriority}
@@ -240,7 +308,22 @@ export default function App() {
       </main>
 
       {resultTask && <ResultModal task={resultTask} onClose={closeResults} />}
-      {showHistory && <HistoryModal tasks={tasks} onClose={closeHistory} />}
+      {showHistory && (
+        <HistoryModal
+          tasks={durationTasks}
+          durationLabel={durationLabel(duration.active)}
+          onClose={closeHistory}
+        />
+      )}
+      {showDuration && (
+        <DurationModal
+          active={duration.active}
+          options={durationOptions}
+          streaks={Object.fromEntries(durationOptions.map((k) => [k, streakFor(k).count]))}
+          onChoose={chooseDuration}
+          onClose={closeDuration}
+        />
+      )}
       {showTimer && (
         <TimerModal
           onClose={closeTimer}

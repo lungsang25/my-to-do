@@ -1,10 +1,11 @@
 import type { Task } from "./api";
+import { periodIndex } from "./period";
 
 export interface Streak {
-  /** Days in a row (skipping days with no tasks) where every task was finished the same day. */
+  /** Periods in a row (skipping ones with no tasks) where every task was finished within its period. */
   count: number;
-  /** Today's tasks exist and are all finished, so today already counts. */
-  todayDone: boolean;
+  /** The current period has tasks and they're all finished, so it already counts. */
+  currentDone: boolean;
 }
 
 /** The server stores times as UTC "YYYY-MM-DD HH:MM:SS". */
@@ -12,37 +13,45 @@ export function parseUtc(value: string): Date {
   return new Date(value.replace(" ", "T") + "Z");
 }
 
-/** Local calendar day, so the streak follows the user's own midnight. */
+/** Local calendar day, so periods follow the user's own midnight. */
 export function dayKey(date: Date): string {
   const pad = (n: number) => String(n).padStart(2, "0");
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
 }
 
-export function computeStreak(tasks: Task[], now = new Date()): Streak {
-  const today = dayKey(now);
-  const byDay = new Map<string, Task[]>();
+/**
+ * Streak for one duration. Only tasks created under that duration count, so every
+ * duration keeps its own independent streak.
+ */
+export function computeStreak(tasks: Task[], key: string, anchor: string, now = new Date()): Streak {
+  const current = periodIndex(now, key, anchor);
+  const byPeriod = new Map<number, Task[]>();
   for (const t of tasks) {
+    if (t.duration !== key) continue;
     // Drafts not yet saved have no created_at; they were made just now.
-    const day = t.created_at ? dayKey(parseUtc(t.created_at)) : today;
-    byDay.set(day, [...(byDay.get(day) ?? []), t]);
+    const p = t.created_at ? periodIndex(parseUtc(t.created_at), key, anchor) : current;
+    byPeriod.set(p, [...(byPeriod.get(p) ?? []), t]);
   }
 
-  const won = (day: string) =>
-    byDay
-      .get(day)!
+  const won = (p: number) =>
+    byPeriod
+      .get(p)!
       .every(
-        (t) => t.status === "done" && t.completed_at !== null && dayKey(parseUtc(t.completed_at)) === day,
+        (t) =>
+          t.status === "done" &&
+          t.completed_at !== null &&
+          periodIndex(parseUtc(t.completed_at), key, anchor) === p,
       );
 
-  const todayDone = byDay.has(today) && won(today);
-  let count = todayDone ? 1 : 0;
-  // Today still in progress doesn't break the streak; past days do.
-  const pastDays = [...byDay.keys()].filter((d) => d < today).sort().reverse();
-  for (const day of pastDays) {
-    if (!won(day)) break;
+  const currentDone = byPeriod.has(current) && won(current);
+  let count = currentDone ? 1 : 0;
+  // The current period still in progress doesn't break the streak; past ones do.
+  const past = [...byPeriod.keys()].filter((p) => p < current).sort((a, b) => b - a);
+  for (const p of past) {
+    if (!won(p)) break;
     count++;
   }
-  return { count, todayDone };
+  return { count, currentDone };
 }
 
 /** Current time in the server's format, for optimistic updates. */

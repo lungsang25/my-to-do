@@ -5,7 +5,21 @@ from fastapi import Depends, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
 from .db import Conn, get_conn
-from .schemas import Result, ResultCreate, Step, StepCreate, StepOrder, StepUpdate, Task, TaskCreate
+from .schemas import (
+    DurationInfo,
+    DurationSet,
+    DurationState,
+    Result,
+    ResultCreate,
+    Step,
+    StepCreate,
+    StepOrder,
+    StepUpdate,
+    Task,
+    TaskCreate,
+)
+
+DEFAULT_DURATION = "1d"
 
 app = FastAPI(title="My To-Do")
 
@@ -90,9 +104,47 @@ def list_tasks(conn: Conn = Depends(get_conn)) -> list[Task]:
     ]
 
 
+def _active_duration(conn: Conn) -> str:
+    row = conn.execute("SELECT value FROM settings WHERE key = 'active_duration'").fetchone()
+    return row["value"] if row else DEFAULT_DURATION
+
+
+def _duration_state(conn: Conn) -> DurationState:
+    rows = conn.execute("SELECT key, anchor FROM durations ORDER BY key").fetchall()
+    return DurationState(
+        active=_active_duration(conn),
+        durations=[DurationInfo(key=r["key"], anchor=r["anchor"]) for r in rows],
+    )
+
+
+@app.get("/api/duration", response_model=DurationState)
+def get_duration(conn: Conn = Depends(get_conn)) -> DurationState:
+    return _duration_state(conn)
+
+
+@app.put("/api/duration", response_model=DurationState)
+def set_duration(body: DurationSet, conn: Conn = Depends(get_conn)) -> DurationState:
+    # A duration keeps the anchor from the first time it was chosen, so its periods
+    # (and its streak) carry on from where they left off when the user switches back.
+    conn.execute(
+        "INSERT INTO durations (key, anchor) VALUES (?, ?) ON CONFLICT (key) DO NOTHING",
+        (body.key, body.anchor),
+    )
+    conn.execute(
+        "INSERT INTO settings (key, value) VALUES ('active_duration', ?) "
+        "ON CONFLICT (key) DO UPDATE SET value = excluded.value",
+        (body.key,),
+    )
+    return _duration_state(conn)
+
+
 @app.post("/api/tasks", response_model=Task, status_code=201)
 def create_task(body: TaskCreate, conn: Conn = Depends(get_conn)) -> Task:
-    task_id = conn.insert("INSERT INTO tasks (title) VALUES (?)", (body.title,))
+    # Each task belongs to the duration active when it was created; that duration's
+    # streak and Done/History split only look at its own tasks.
+    task_id = conn.insert(
+        "INSERT INTO tasks (title, duration) VALUES (?, ?)", (body.title, _active_duration(conn))
+    )
     return _load_task(conn, task_id)
 
 

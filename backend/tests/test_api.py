@@ -18,7 +18,7 @@ def client(request, tmp_path, monkeypatch):
         import psycopg
 
         with psycopg.connect(TEST_DATABASE_URL) as conn:
-            conn.execute("DROP TABLE IF EXISTS results, steps, tasks")
+            conn.execute("DROP TABLE IF EXISTS results, steps, tasks, durations, settings")
         monkeypatch.setenv("DATABASE_URL", TEST_DATABASE_URL)
         db._initialized.discard(TEST_DATABASE_URL)
     else:
@@ -227,3 +227,42 @@ def test_old_database_gets_completed_at_column(tmp_path, monkeypatch):
         [task] = c.get("/api/tasks").json()
     # Finish time unknown for old rows, so it is assumed to be the creation time.
     assert task["completed_at"] == "2026-01-02 03:04:05"
+    assert task["duration"] == "1d"
+
+
+def test_duration_defaults_to_one_day(client):
+    assert client.get("/api/duration").json() == {"active": "1d", "durations": []}
+    assert client.post("/api/tasks", json={"title": "Daily"}).json()["duration"] == "1d"
+
+
+def test_set_duration_applies_to_new_tasks_only(client):
+    old = client.post("/api/tasks", json={"title": "Daily"}).json()
+
+    r = client.put("/api/duration", json={"key": "1w", "anchor": "2026-10-21"})
+    assert r.status_code == 200
+    assert r.json() == {"active": "1w", "durations": [{"key": "1w", "anchor": "2026-10-21"}]}
+
+    new = client.post("/api/tasks", json={"title": "Weekly"}).json()
+    assert new["duration"] == "1w"
+    assert client.get(f"/api/tasks/{old['id']}").json()["duration"] == "1d"
+
+
+def test_duration_keeps_its_first_anchor(client):
+    client.put("/api/duration", json={"key": "1w", "anchor": "2026-10-21"})
+    client.put("/api/duration", json={"key": "1d", "anchor": "2026-10-22"})
+    state = client.put("/api/duration", json={"key": "1w", "anchor": "2026-11-03"}).json()
+    assert state["active"] == "1w"
+    assert {d["key"]: d["anchor"] for d in state["durations"]} == {
+        "1d": "2026-10-22",
+        "1w": "2026-10-21",
+    }
+
+
+def test_rejects_invalid_duration(client):
+    for body in [
+        {"key": "0d", "anchor": "2026-10-21"},
+        {"key": "1x", "anchor": "2026-10-21"},
+        {"key": "1000d", "anchor": "2026-10-21"},
+        {"key": "1w", "anchor": "21/10/2026"},
+    ]:
+        assert client.put("/api/duration", json=body).status_code == 422

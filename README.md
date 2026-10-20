@@ -2,7 +2,7 @@
 
 A minimal to-do tracker. Enter your top priority, add the steps to achieve it one at a time, then track it on a To Do / Done board. A task moves to Done automatically once all its steps are checked (and back to To Do if one is unchecked).
 
-The flame next to **Done** is your streak: the number of days in a row on which you finished every task you created that day, before midnight (your local time). A day with an unfinished task resets it to 0. Days with no tasks are skipped. The flame turns orange once today's tasks are all done.
+The **Duration** button (top of the left column) sets the period you work in: 1 day (default), 1 week, 2 weeks, 1 month, 1 year, or any custom length. Periods start on the day you first choose that duration. The flame next to **Done** is that duration's streak: the number of periods in a row in which you finished every task you created during the period, before the period ended (your local time). A period with an unfinished task resets it to 0; periods with no tasks are skipped. Each duration is fully independent: every task remembers the duration it was created under, and the board, History and streak only show the active duration's tasks, so switching back and forth doesn't affect the others. Finished tasks stay in Done until their period ends, then move to History.
 
 - **Backend:** FastAPI + SQLite (`backend/`, data stored in `backend/todo.db`)
 - **Frontend:** React + Vite + TypeScript (`frontend/`)
@@ -45,6 +45,8 @@ cd backend
 | POST | `/api/tasks/{id}/steps` | `{ "text": "..." }` | Append a step |
 | PATCH | `/api/steps/{id}` | `{ "done": true }` | Check or uncheck a step |
 | DELETE | `/api/tasks/{id}` | | Delete a task and its steps |
+| GET | `/api/duration` | | Active duration and every duration used, with its start date |
+| PUT | `/api/duration` | `{ "key": "1w", "anchor": "2026-10-21" }` | Switch duration (`anchor` = today's local date; kept from the first time a key is chosen) |
 
 Set `TODO_DB_PATH` to use a different SQLite file. Set `DATABASE_URL` to a Postgres connection string to use Postgres instead (this is what production does).
 

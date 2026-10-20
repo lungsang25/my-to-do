@@ -1,15 +1,18 @@
 import type { Streak as StreakValue } from "../streak";
+import { currentPeriodPossessive, periodName } from "../period";
 
-/** Flame and day count shown beside the Done heading. */
-export default function Streak({ streak }: { streak: StreakValue }) {
-  const { count, todayDone } = streak;
-  const label = todayDone
-    ? `${count}-day streak. All of today's tasks are done!`
+/** Flame and streak count shown beside the Done heading. */
+export default function Streak({ streak, duration }: { streak: StreakValue; duration: string }) {
+  const { count, currentDone } = streak;
+  const name = periodName(duration);
+  const current = currentPeriodPossessive(duration);
+  const label = currentDone
+    ? `${count}-${name} streak. All of ${current} tasks are done!`
     : count > 0
-      ? `${count}-day streak. Finish all of today's tasks to keep it going.`
-      : "No streak yet. Finish every task you set today to start one.";
+      ? `${count}-${name} streak. Finish all of ${current} tasks to keep it going.`
+      : `No streak yet. Finish every task you set ${current === "today's" ? "today" : `this ${name}`} to start one.`;
   return (
-    <span className={todayDone ? "streak" : "streak pending"} title={label} aria-label={label}>
+    <span className={currentDone ? "streak" : "streak pending"} title={label} aria-label={label}>
       <svg className="streak-flame" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
         <path
           className="streak-flame-outer"

@@ -51,11 +51,32 @@ class Result(BaseModel):
     position: int
 
 
+# "<n><unit>": 1-999 days (d), weeks (w), months (m) or years (y), e.g. "1d", "2w", "1m".
+DurationKey = Annotated[str, StringConstraints(pattern=r"^[1-9][0-9]{0,2}[dwmy]$")]
+LocalDate = Annotated[str, StringConstraints(pattern=r"^[0-9]{4}-[0-9]{2}-[0-9]{2}$")]
+
+
+class DurationSet(BaseModel):
+    key: DurationKey
+    anchor: LocalDate  # the user's local date today; only used the first time this key is chosen
+
+
+class DurationInfo(BaseModel):
+    key: str
+    anchor: str
+
+
+class DurationState(BaseModel):
+    active: str
+    durations: list[DurationInfo]
+
+
 class Task(BaseModel):
     id: int
     title: str
     status: Status
     created_at: str
     completed_at: str | None = None
+    duration: str = "1d"
     steps: list[Step]
     results: list[Result] = []

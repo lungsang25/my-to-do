@@ -6,6 +6,8 @@ import type { Task } from "../api";
 
 interface Props {
   tasks: Task[];
+  /** Active duration, e.g. "1 week"; History only lists that duration's tasks. */
+  durationLabel: string;
   onClose: () => void;
 }
 
@@ -24,7 +26,7 @@ function dayLabel(key: string, now = new Date()): string {
 }
 
 /** Every finished task, newest first, grouped by the day it was finished. */
-export default function HistoryModal({ tasks, onClose }: Props) {
+export default function HistoryModal({ tasks, durationLabel, onClose }: Props) {
   const closeRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
@@ -53,7 +55,9 @@ export default function HistoryModal({ tasks, onClose }: Props) {
     <div className="modal-backdrop" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
       <div className="modal" role="dialog" aria-modal="true" aria-labelledby="history-title">
         <div className="modal-header">
-          <h2 id="history-title">History</h2>
+          <h2 id="history-title">
+            History <span className="history-duration">· {durationLabel}</span>
+          </h2>
           <button ref={closeRef} type="button" className="icon-button" onClick={onClose} aria-label="Close">
             <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
               <path d="M6 6l12 12M18 6 6 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />

@@ -15,7 +15,8 @@ CREATE TABLE IF NOT EXISTS tasks (
     status     TEXT NOT NULL DEFAULT 'todo'
                CHECK (status IN ('todo', 'in_progress', 'done')),
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
-    completed_at TEXT
+    completed_at TEXT,
+    duration     TEXT NOT NULL DEFAULT '1d'
 );
 
 CREATE TABLE IF NOT EXISTS steps (
@@ -36,6 +37,18 @@ CREATE TABLE IF NOT EXISTS results (
 );
 
 CREATE INDEX IF NOT EXISTS idx_results_task ON results(task_id, position);
+
+-- Durations the user has chosen; anchor is the local date (YYYY-MM-DD) it was first chosen,
+-- which fixes where its periods start.
+CREATE TABLE IF NOT EXISTS durations (
+    key    TEXT PRIMARY KEY,
+    anchor TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS settings (
+    key   TEXT PRIMARY KEY,
+    value TEXT NOT NULL
+);
 """
 
 # Same shape as the SQLite schema; created_at uses the same "YYYY-MM-DD HH:MM:SS" UTC text.
@@ -47,7 +60,8 @@ CREATE TABLE IF NOT EXISTS tasks (
                CHECK (status IN ('todo', 'in_progress', 'done')),
     created_at TEXT NOT NULL
                DEFAULT (to_char(now() AT TIME ZONE 'UTC', 'YYYY-MM-DD HH24:MI:SS')),
-    completed_at TEXT
+    completed_at TEXT,
+    duration     TEXT NOT NULL DEFAULT '1d'
 );
 
 CREATE TABLE IF NOT EXISTS steps (
@@ -68,6 +82,18 @@ CREATE TABLE IF NOT EXISTS results (
 );
 
 CREATE INDEX IF NOT EXISTS idx_results_task ON results(task_id, position);
+
+-- Durations the user has chosen; anchor is the local date (YYYY-MM-DD) it was first chosen,
+-- which fixes where its periods start.
+CREATE TABLE IF NOT EXISTS durations (
+    key    TEXT PRIMARY KEY,
+    anchor TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS settings (
+    key   TEXT PRIMARY KEY,
+    value TEXT NOT NULL
+);
 """
 
 # Re-derive every task's status from its steps (Done = has steps, all checked).
@@ -87,12 +113,18 @@ UPDATE tasks SET completed_at = created_at WHERE status = 'done' AND completed_a
 
 def _migrate(conn: "Conn") -> None:
     """Add columns introduced after the first release to existing databases."""
+    added = {
+        "completed_at": "TEXT",
+        "duration": "TEXT NOT NULL DEFAULT '1d'",
+    }
     if conn.postgres:
-        conn.execute("ALTER TABLE tasks ADD COLUMN IF NOT EXISTS completed_at TEXT")
+        for name, decl in added.items():
+            conn.execute(f"ALTER TABLE tasks ADD COLUMN IF NOT EXISTS {name} {decl}")
         return
     columns = {row["name"] for row in conn.execute("PRAGMA table_info(tasks)").fetchall()}
-    if "completed_at" not in columns:
-        conn.execute("ALTER TABLE tasks ADD COLUMN completed_at TEXT")
+    for name, decl in added.items():
+        if name not in columns:
+            conn.execute(f"ALTER TABLE tasks ADD COLUMN {name} {decl}")
 
 
 def database_url() -> str | None:

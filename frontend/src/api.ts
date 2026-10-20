@@ -21,8 +21,16 @@ export interface Task {
   status: Status;
   created_at: string;
   completed_at: string | null;
+  /** Duration key active when the task was created, e.g. "1d", "2w". */
+  duration: string;
   steps: Step[];
   results: Result[];
+}
+
+export interface DurationState {
+  active: string;
+  /** Every duration used so far, with the local date its periods are counted from. */
+  durations: { key: string; anchor: string }[];
 }
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
@@ -52,5 +60,8 @@ export const api = {
     }),
   setStepDone: (stepId: number, done: boolean) =>
     request<Step>(`/steps/${stepId}`, { method: "PATCH", body: JSON.stringify({ done }) }),
+  getDuration: () => request<DurationState>("/duration"),
+  setDuration: (key: string, anchor: string) =>
+    request<DurationState>("/duration", { method: "PUT", body: JSON.stringify({ key, anchor }) }),
   deleteTask: (taskId: number) => request<void>(`/tasks/${taskId}`, { method: "DELETE" }),
 };
