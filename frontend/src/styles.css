@@ -896,6 +896,22 @@ button {
   color: var(--accent);
 }
 
+.history-stamp {
+  position: relative;
+}
+
+/* Floats above the time so the time stays level with the title. */
+.history-stamp-label {
+  position: absolute;
+  left: 0;
+  bottom: 100%;
+  margin-bottom: 12px;
+  white-space: nowrap;
+  color: var(--muted);
+  font-size: 0.7rem;
+  letter-spacing: 0.04em;
+}
+
 .history-time {
   color: var(--muted);
   font-size: 0.8rem;

@@ -79,9 +79,12 @@ export default function HistoryModal({ tasks, durationLabel, onClose }: Props) {
                           <Bolt size={16} />
                           {cap(task.title)}
                         </span>
-                        <time className="history-time" dateTime={at.toISOString()}>
-                          {at.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit", hour12: true })}
-                        </time>
+                        <span className="history-stamp">
+                          <span className="history-stamp-label">Done at :</span>
+                          <time className="history-time" dateTime={at.toISOString()}>
+                            {at.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit", hour12: true })}
+                          </time>
+                        </span>
                       </summary>
                       <ul className="history-steps">
                         {task.steps.map((s) => (
