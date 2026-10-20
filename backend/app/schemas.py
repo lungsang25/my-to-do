@@ -56,5 +56,6 @@ class Task(BaseModel):
     title: str
     status: Status
     created_at: str
+    completed_at: str | None = None
     steps: list[Step]
     results: list[Result] = []

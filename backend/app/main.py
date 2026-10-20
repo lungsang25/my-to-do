@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from typing import Any
 
 from fastapi import Depends, FastAPI, HTTPException
@@ -33,14 +34,28 @@ def _result(row: Any) -> Result:
 
 
 def _sync_status(conn: Conn, task_id: int) -> None:
-    """A task is Done once it has steps and every one is checked; otherwise it is To Do."""
+    """A task is Done once it has steps and every one is checked; otherwise it is To Do.
+
+    completed_at records when the task last became Done (UTC, same format as created_at).
+    """
     row = conn.execute(
         "SELECT COUNT(*) AS total, COALESCE(SUM(done), 0) AS checked FROM steps WHERE task_id = ?",
         (task_id,),
     ).fetchone()
     total, checked = row["total"], row["checked"]
     status = "done" if total > 0 and checked == total else "todo"
-    conn.execute("UPDATE tasks SET status = ? WHERE id = ?", (status, task_id))
+    if status == "todo":
+        conn.execute(
+            "UPDATE tasks SET status = ?, completed_at = NULL WHERE id = ?", (status, task_id)
+        )
+        return
+    was_done = conn.execute("SELECT status FROM tasks WHERE id = ?", (task_id,)).fetchone()
+    if was_done is not None and was_done["status"] == "done":
+        return  # already Done; keep the original finish time
+    now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
+    conn.execute(
+        "UPDATE tasks SET status = ?, completed_at = ? WHERE id = ?", (status, now, task_id)
+    )
 
 
 def _load_task(conn: Conn, task_id: int) -> Task:

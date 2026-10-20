@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { cap } from "./text";
 import { api, type Task } from "./api";
 import { useTheme } from "./theme";
+import { computeStreak, nowUtc } from "./streak";
 import ThemeToggle from "./components/ThemeToggle";
 import PromptInput from "./components/PromptInput";
 import StepsEntry from "./components/StepsEntry";
@@ -71,7 +72,9 @@ export default function App() {
         prev.map((t) => {
           if (!t.steps.some((s) => s.id === stepId)) return t;
           const steps = t.steps.map((s) => (s.id === stepId ? { ...s, done: value } : s));
-          return { ...t, steps, status: steps.every((s) => s.done) ? "done" : "todo" };
+          if (!steps.every((s) => s.done)) return { ...t, steps, status: "todo", completed_at: null };
+          // Keep the original finish time if it was already done.
+          return { ...t, steps, status: "done", completed_at: t.completed_at ?? nowUtc() };
         }),
       );
     setDone(done); // optimistic
@@ -88,7 +91,7 @@ export default function App() {
     const temp = { id: -Date.now(), task_id: task.id, text, position: task.steps.length, done: false };
     // Optimistic: a new unchecked step also sends a finished task back to To Do.
     setTasks((prev) =>
-      prev.map((t) => (t.id === task.id ? { ...t, steps: [...t.steps, temp], status: "todo" } : t)),
+      prev.map((t) => (t.id === task.id ? { ...t, steps: [...t.steps, temp], status: "todo", completed_at: null } : t)),
     );
     try {
       await api.addStep(task.id, text);
@@ -136,6 +139,7 @@ export default function App() {
   const resultTask = tasks.find((t) => t.id === resultTaskId) ?? null;
   const openTask = tasks.find((t) => t.id === openTaskId) ?? null;
   const showBoard = tasks.length > 0;
+  const streak = useMemo(() => computeStreak(tasks), [tasks]);
   // While adding a task, show only the field (the board returns when it's done or closed).
   const entering = showPrompt || currentTask !== null;
 
@@ -152,6 +156,7 @@ export default function App() {
             onDelete={deleteTask}
             onNew={() => setShowPrompt(true)}
             newDisabled={currentTask !== null}
+            streak={streak}
           />
         )}
 

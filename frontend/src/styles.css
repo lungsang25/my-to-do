@@ -12,6 +12,7 @@
   --shadow: 0 10px 30px -12px rgba(60, 40, 140, 0.25);
   --overlay: rgba(20, 15, 40, 0.35);
   --error: #c62828;
+  --streak: #f2760a;
   color-scheme: light;
 }
 
@@ -29,6 +30,7 @@
   --shadow: 0 10px 30px -12px rgba(0, 0, 0, 0.6);
   --overlay: rgba(0, 0, 0, 0.6);
   --error: #ff7b7b;
+  --streak: #ff9a3c;
   color-scheme: dark;
 }
 
@@ -403,6 +405,9 @@ button {
 }
 
 .column-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   margin: 0 0 10px;
   padding-bottom: 10px;
   border-bottom: 2px solid var(--border);
@@ -477,6 +482,23 @@ button {
   .task-delete {
     opacity: 1;
   }
+}
+
+.streak {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--streak);
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0;
+  font-variant-numeric: tabular-nums;
+  cursor: default;
+}
+
+.streak.pending {
+  color: var(--muted);
+  opacity: 0.8;
 }
 
 .task-progress {

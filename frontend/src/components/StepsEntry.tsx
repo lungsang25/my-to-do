@@ -63,6 +63,7 @@ export default function StepsEntry({ title, created, onFinish, onError }: Props)
         title,
         status: "todo",
         created_at: "",
+        completed_at: null,
         steps: saved.steps.map((s, i) => ({ id: -s.key, task_id: taskId, text: s.text, position: i, done: false })),
         results: saved.results.map((r, i) => ({ id: -r.key, task_id: taskId, text: r.text, position: i })),
       },

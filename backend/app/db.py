@@ -14,7 +14,8 @@ CREATE TABLE IF NOT EXISTS tasks (
     title      TEXT NOT NULL,
     status     TEXT NOT NULL DEFAULT 'todo'
                CHECK (status IN ('todo', 'in_progress', 'done')),
-    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    completed_at TEXT
 );
 
 CREATE TABLE IF NOT EXISTS steps (
@@ -45,7 +46,8 @@ CREATE TABLE IF NOT EXISTS tasks (
     status     TEXT NOT NULL DEFAULT 'todo'
                CHECK (status IN ('todo', 'in_progress', 'done')),
     created_at TEXT NOT NULL
-               DEFAULT (to_char(now() AT TIME ZONE 'UTC', 'YYYY-MM-DD HH24:MI:SS'))
+               DEFAULT (to_char(now() AT TIME ZONE 'UTC', 'YYYY-MM-DD HH24:MI:SS')),
+    completed_at TEXT
 );
 
 CREATE TABLE IF NOT EXISTS steps (
@@ -75,7 +77,22 @@ UPDATE tasks SET status = CASE
     WHEN EXISTS (SELECT 1 FROM steps WHERE task_id = tasks.id)
      AND NOT EXISTS (SELECT 1 FROM steps WHERE task_id = tasks.id AND done = 0)
     THEN 'done' ELSE 'todo' END;
+
+UPDATE tasks SET completed_at = NULL WHERE status <> 'done';
+
+-- Tasks finished before completed_at existed: assume they were finished the day they were created.
+UPDATE tasks SET completed_at = created_at WHERE status = 'done' AND completed_at IS NULL;
 """
+
+
+def _migrate(conn: "Conn") -> None:
+    """Add columns introduced after the first release to existing databases."""
+    if conn.postgres:
+        conn.execute("ALTER TABLE tasks ADD COLUMN IF NOT EXISTS completed_at TEXT")
+        return
+    columns = {row["name"] for row in conn.execute("PRAGMA table_info(tasks)").fetchall()}
+    if "completed_at" not in columns:
+        conn.execute("ALTER TABLE tasks ADD COLUMN completed_at TEXT")
 
 
 def database_url() -> str | None:
@@ -141,6 +158,7 @@ def init_db() -> None:
     conn = connect()
     try:
         conn.executescript(POSTGRES_SCHEMA if conn.postgres else SQLITE_SCHEMA)
+        _migrate(conn)
         conn.executescript(SYNC_STATUSES)
         conn.commit()
     finally:

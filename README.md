@@ -2,6 +2,8 @@
 
 A minimal to-do tracker. Enter your top priority, add the steps to achieve it one at a time, then track it on a To Do / Done board. A task moves to Done automatically once all its steps are checked (and back to To Do if one is unchecked).
 
+The flame next to **Done** is your streak: the number of days in a row on which you finished every task you created that day, before midnight (your local time). A day with an unfinished task resets it to 0. Days with no tasks are skipped. The flame turns orange once today's tasks are all done.
+
 - **Backend:** FastAPI + SQLite (`backend/`, data stored in `backend/todo.db`)
 - **Frontend:** React + Vite + TypeScript (`frontend/`)
 

@@ -20,6 +20,7 @@ export interface Task {
   title: string;
   status: Status;
   created_at: string;
+  completed_at: string | null;
   steps: Step[];
   results: Result[];
 }

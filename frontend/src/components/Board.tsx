@@ -1,6 +1,8 @@
 import type { Status, Task } from "../api";
 import { cap } from "../text";
+import type { Streak as StreakValue } from "../streak";
 import Bolt from "./Bolt";
+import Streak from "./Streak";
 
 const COLUMNS: { status: Status; label: string }[] = [
   { status: "todo", label: "To Do" },
@@ -14,9 +16,10 @@ interface Props {
   onDelete: (task: Task) => void;
   onNew: () => void;
   newDisabled?: boolean;
+  streak: StreakValue;
 }
 
-export default function Board({ tasks, onOpen, onShowResults, onDelete, onNew, newDisabled }: Props) {
+export default function Board({ tasks, onOpen, onShowResults, onDelete, onNew, newDisabled, streak }: Props) {
   return (
     <section className="board" aria-label="Task board">
       <button type="button" className="new-button" onClick={onNew} disabled={newDisabled}>
@@ -27,7 +30,10 @@ export default function Board({ tasks, onOpen, onShowResults, onDelete, onNew, n
       </button>
       {COLUMNS.map(({ status, label }) => (
         <div key={status} className="column">
-          <h2 className="column-title">{label}</h2>
+          <h2 className="column-title">
+            {label}
+            {status === "done" && <Streak streak={streak} />}
+          </h2>
           <ul className="column-list">
             {tasks
               .filter((t) => (t.status === "done" ? "done" : "todo") === status)

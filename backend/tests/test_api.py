@@ -162,3 +162,68 @@ def test_text_is_stored_capitalized(client):
     assert task["title"] == "Clean my balcony"
     step = client.post(f"/api/tasks/{task['id']}/steps", json={"text": "get broom"}).json()
     assert step["text"] == "Get broom"
+
+
+def test_completed_at_tracks_when_task_is_done(client):
+    task = client.post("/api/tasks", json={"title": "Hackathon"}).json()
+    assert task["completed_at"] is None
+    task_id = task["id"]
+    step_id = client.post(f"/api/tasks/{task_id}/steps", json={"text": "Register"}).json()["id"]
+    get = lambda: client.get(f"/api/tasks/{task_id}").json()  # noqa: E731
+
+    client.patch(f"/api/steps/{step_id}", json={"done": True})
+    completed_at = get()["completed_at"]
+    assert completed_at is not None
+    assert len(completed_at) == len("YYYY-MM-DD HH:MM:SS")
+
+    # Re-saving a done step keeps the original finish time.
+    client.patch(f"/api/steps/{step_id}", json={"done": True})
+    assert get()["completed_at"] == completed_at
+
+    client.patch(f"/api/steps/{step_id}", json={"done": False})
+    assert get()["completed_at"] is None
+
+    client.patch(f"/api/steps/{step_id}", json={"done": True})
+    client.post(f"/api/tasks/{task_id}/steps", json={"text": "Pack laptop"})
+    assert get()["completed_at"] is None
+
+
+def test_old_database_gets_completed_at_column(tmp_path, monkeypatch):
+    import sqlite3
+
+    from app import db
+
+    path = tmp_path / "old.db"
+    old = sqlite3.connect(path)
+    old.executescript(
+        """
+        CREATE TABLE tasks (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            title TEXT NOT NULL,
+            status TEXT NOT NULL DEFAULT 'todo',
+            created_at TEXT NOT NULL DEFAULT (datetime('now'))
+        );
+        CREATE TABLE steps (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            task_id INTEGER NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
+            text TEXT NOT NULL,
+            position INTEGER NOT NULL,
+            done INTEGER NOT NULL DEFAULT 0
+        );
+        INSERT INTO tasks (title, status, created_at) VALUES ('Old', 'done', '2026-01-02 03:04:05');
+        INSERT INTO steps (task_id, text, position, done) VALUES (1, 'Step', 0, 1);
+        """
+    )
+    old.commit()
+    old.close()
+
+    monkeypatch.delenv("DATABASE_URL", raising=False)
+    monkeypatch.setenv("TODO_DB_PATH", str(path))
+    db._initialized.discard(str(path))
+
+    from app.main import app
+
+    with TestClient(app) as c:
+        [task] = c.get("/api/tasks").json()
+    # Finish time unknown for old rows, so it is assumed to be the creation time.
+    assert task["completed_at"] == "2026-01-02 03:04:05"
