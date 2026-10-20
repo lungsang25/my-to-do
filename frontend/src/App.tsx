@@ -27,6 +27,8 @@ export default function App() {
   const [openTaskId, setOpenTaskId] = useState<number | null>(null);
   const [resultTaskId, setResultTaskId] = useState<number | null>(null);
   const [showHistory, setShowHistory] = useState(false);
+  // Bumped at local midnight so the board re-evaluates which done tasks belong in History.
+  const [, setDayTick] = useState(0);
   const [showTimer, setShowTimer] = useState(false);
   // When the running timer ends (epoch ms). Kept in localStorage so a refresh doesn't lose it.
   const [timerEndsAt, setTimerEndsAt] = useState<number | null>(() => {
@@ -57,6 +59,20 @@ export default function App() {
     // First visit (no tasks yet): start with the field. Otherwise show just the board.
     refresh().then((list) => setShowPrompt(!list || list.length === 0));
   }, [refresh]);
+
+  useEffect(() => {
+    let timer: number;
+    const schedule = () => {
+      const now = new Date();
+      const midnight = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+      timer = window.setTimeout(() => {
+        setDayTick((n) => n + 1);
+        schedule();
+      }, midnight.getTime() - now.getTime() + 1000);
+    };
+    schedule();
+    return () => window.clearTimeout(timer);
+  }, []);
 
   const submitPriority = () => {
     // Move straight on to the steps; the task is created in the background.
