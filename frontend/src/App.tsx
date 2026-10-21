@@ -141,6 +141,19 @@ export default function App() {
     await refresh(); // real ids (and the server's view if the save failed)
   };
 
+  const editStep = async (stepId: number, text: string) => {
+    if (stepId < 0) return;
+    setTasks((prev) =>
+      prev.map((t) => ({ ...t, steps: t.steps.map((s) => (s.id === stepId ? { ...s, text } : s)) })),
+    ); // optimistic
+    try {
+      await api.setStepText(stepId, text);
+    } catch (e) {
+      setError((e as Error).message);
+      await refresh();
+    }
+  };
+
   const reorderSteps = async (task: Task, stepIds: number[]) => {
     if (task.id < 0 || stepIds.some((id) => id < 0)) return;
     setTasks((prev) =>
@@ -341,6 +354,7 @@ export default function App() {
           onToggleStep={toggleStep}
           onAddStep={addStep}
           onReorder={reorderSteps}
+          onEditStep={editStep}
         />}
     </>
   );

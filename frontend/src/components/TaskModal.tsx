@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
-import { cap } from "../text";
+import { cap, toggleBold } from "../text";
+import RichText from "./RichText";
 import Bolt from "./Bolt";
 import type { Step, Task } from "../api";
 
@@ -9,11 +10,40 @@ interface Props {
   onToggleStep: (stepId: number, done: boolean) => void;
   onAddStep: (task: Task, text: string) => void;
   onReorder: (task: Task, stepIds: number[]) => void;
+  onEditStep: (stepId: number, text: string) => void;
 }
 
-export default function TaskModal({ task, onClose, onToggleStep, onAddStep, onReorder }: Props) {
+export default function TaskModal({ task, onClose, onToggleStep, onAddStep, onReorder, onEditStep }: Props) {
   const [editing, setEditing] = useState(false);
   const [text, setText] = useState("");
+  // The step whose text is being edited, with its draft (bold parts sit between ** markers).
+  const [editId, setEditId] = useState<number | null>(null);
+  const [draft, setDraft] = useState("");
+  const editRef = useRef<HTMLInputElement>(null);
+
+  const startEdit = (s: Step) => {
+    setEditId(s.id);
+    setDraft(s.text);
+  };
+
+  const bold = () => {
+    const el = editRef.current;
+    if (!el) return;
+    const r = toggleBold(draft, el.selectionStart ?? 0, el.selectionEnd ?? 0);
+    setDraft(r.value);
+    requestAnimationFrame(() => {
+      el.focus();
+      el.setSelectionRange(r.start, r.end);
+    });
+  };
+
+  const saveEdit = () => {
+    const value = draft.replace(/\*\*\*\*/g, "").trim();
+    if (editId !== null && value && value !== task.steps.find((x) => x.id === editId)?.text) {
+      onEditStep(editId, value);
+    }
+    setEditId(null);
+  };
   const closeRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
@@ -84,7 +114,10 @@ export default function TaskModal({ task, onClose, onToggleStep, onAddStep, onRe
             <button
               type="button"
               className={editing ? "edit-toggle active" : "edit-toggle"}
-              onClick={() => setEditing((v) => !v)}
+              onClick={() => {
+                setEditing((v) => !v);
+                setEditId(null);
+              }}
               aria-pressed={editing}
             >
               {editing ? "Done" : "Edit"}
@@ -118,9 +151,51 @@ export default function TaskModal({ task, onClose, onToggleStep, onAddStep, onRe
                   "step-item" + (editing ? " editing" : "") + (drag && i === drag.over ? " dragging" : "")
                 }
               >
+                {editing && editId === s.id ? (
+                  <form
+                    className="step-edit"
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      saveEdit();
+                    }}
+                  >
+                    <input
+                      ref={editRef}
+                      type="text"
+                      value={draft}
+                      onChange={(e) => setDraft(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "b" && (e.ctrlKey || e.metaKey)) {
+                          e.preventDefault();
+                          bold();
+                        } else if (e.key === "Escape") {
+                          e.stopPropagation();
+                          setEditId(null);
+                        }
+                      }}
+                      aria-label="Edit step"
+                      autoComplete="off"
+                      autoFocus
+                    />
+                    <button
+                      type="button"
+                      className="bold-button"
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={bold}
+                      title="Bold the selected text (Ctrl+B)"
+                      aria-label="Bold selected text"
+                    >
+                      B
+                    </button>
+                    <button type="submit" className="step-save">
+                      Save
+                    </button>
+                  </form>
+                ) : (
+                  <>
                 <label className={s.done ? "step done" : "step"}>
                   <span className="step-text">
-                    {cap(s.text)}
+                    <RichText text={s.text} />
                     {s.done && (
                       <svg className="step-tick" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
                         <circle cx="12" cy="12" r="10" />
@@ -134,6 +209,29 @@ export default function TaskModal({ task, onClose, onToggleStep, onAddStep, onRe
                     onChange={(e) => onToggleStep(s.id, e.target.checked)}
                   />
                 </label>
+                  </>
+                )}
+                {editing && editId !== s.id && (
+                  <button
+                    type="button"
+                    className="edit-step"
+                    onClick={() => startEdit(s)}
+                    disabled={s.id < 0}
+                    aria-label={`Edit "${s.text}"`}
+                    title="Edit step"
+                  >
+                    <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+                      <path
+                        d="M4 20h4L19 9l-4-4L4 16v4zM13.5 6.5l4 4"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  </button>
+                )}
                 {editing && (
                   <button
                     type="button"

@@ -1,3 +1,4 @@
+import RichText from "./RichText";
 import { useEffect, useMemo, useRef } from "react";
 import { cap } from "../text";
 import { dayKey, parseUtc } from "../streak";
@@ -89,7 +90,7 @@ export default function HistoryModal({ tasks, durationLabel, onClose }: Props) {
                       <ul className="history-steps">
                         {task.steps.map((s) => (
                           <li key={s.id} className={s.done ? "is-done" : undefined}>
-                            {cap(s.text)}
+                            <RichText text={s.text} />
                           </li>
                         ))}
                         {task.steps.length === 0 && <li>No steps.</li>}

@@ -33,7 +33,8 @@ class StepOrder(BaseModel):
 
 
 class StepUpdate(BaseModel):
-    done: bool
+    done: bool | None = None
+    text: NonEmptyText | None = None
 
 
 class Step(BaseModel):

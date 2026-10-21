@@ -60,6 +60,8 @@ export const api = {
     }),
   setStepDone: (stepId: number, done: boolean) =>
     request<Step>(`/steps/${stepId}`, { method: "PATCH", body: JSON.stringify({ done }) }),
+  setStepText: (stepId: number, text: string) =>
+    request<Step>(`/steps/${stepId}`, { method: "PATCH", body: JSON.stringify({ text }) }),
   getDuration: () => request<DurationState>("/duration"),
   setDuration: (key: string, anchor: string) =>
     request<DurationState>("/duration", { method: "PUT", body: JSON.stringify({ key, anchor }) }),

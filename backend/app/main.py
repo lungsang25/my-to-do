@@ -205,9 +205,15 @@ def reorder_steps(task_id: int, body: StepOrder, conn: Conn = Depends(get_conn))
 def update_step(
     step_id: int, body: StepUpdate, conn: Conn = Depends(get_conn)
 ) -> Step:
-    cur = conn.execute("UPDATE steps SET done = ? WHERE id = ?", (int(body.done), step_id))
-    if cur.rowcount == 0:
+    if body.done is None and body.text is None:
+        raise HTTPException(status_code=422, detail="Nothing to update")
+    cur = conn.execute("SELECT id FROM steps WHERE id = ?", (step_id,))
+    if cur.fetchone() is None:
         raise HTTPException(status_code=404, detail="Step not found")
+    if body.done is not None:
+        conn.execute("UPDATE steps SET done = ? WHERE id = ?", (int(body.done), step_id))
+    if body.text is not None:
+        conn.execute("UPDATE steps SET text = ? WHERE id = ?", (body.text, step_id))
     row = conn.execute("SELECT * FROM steps WHERE id = ?", (step_id,)).fetchone()
     _sync_status(conn, row["task_id"])
     return _step(row)

@@ -1189,3 +1189,80 @@ button {
   color: var(--muted);
   font-weight: 400;
 }
+
+/* ---------- Step text editing ---------- */
+
+.step-edit {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  gap: 6px;
+}
+
+.step-edit input {
+  flex: 1;
+  min-width: 0;
+  padding: 8px 12px;
+  border: 1px solid var(--accent);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--fg);
+  font: inherit;
+  outline: none;
+}
+
+.bold-button,
+.step-save {
+  flex-shrink: 0;
+  padding: 0 12px;
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--fg);
+  font: inherit;
+  cursor: pointer;
+}
+
+.bold-button {
+  font-weight: 800;
+}
+
+.step-save {
+  border: none;
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  color: #fff;
+  font-weight: 600;
+}
+
+.bold-button:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.edit-step {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 28px;
+  height: 32px;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.edit-step:hover:not(:disabled) {
+  color: var(--accent);
+}
+
+.edit-step:disabled {
+  opacity: 0.25;
+  cursor: default;
+}
+
+.step strong,
+.history-steps strong {
+  font-weight: 700;
+}
