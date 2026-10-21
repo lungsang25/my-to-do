@@ -4,7 +4,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 # Every test runs against SQLite, and also against Postgres when TEST_DATABASE_URL is set.
-# The Postgres database's tasks/steps tables are dropped before each test.
+# The Postgres database's tasks/steps tables are dropped before each test..
 TEST_DATABASE_URL = os.environ.get("TEST_DATABASE_URL")
 
 
