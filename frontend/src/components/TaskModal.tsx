@@ -19,7 +19,7 @@ export default function TaskModal({ task, onClose, onToggleStep, onAddStep, onRe
   // The step whose text is being edited, with its draft (bold parts sit between ** markers).
   const [editId, setEditId] = useState<number | null>(null);
   const [draft, setDraft] = useState("");
-  const editRef = useRef<HTMLInputElement>(null);
+  const editRef = useRef<HTMLTextAreaElement>(null);
 
   const startEdit = (s: Step) => {
     setEditId(s.id);
@@ -35,6 +35,13 @@ export default function TaskModal({ task, onClose, onToggleStep, onAddStep, onRe
       el.focus();
       el.setSelectionRange(r.start, r.end);
     });
+  };
+
+  // Grow the textarea to show the whole step.
+  const fitEdit = (e: { currentTarget: HTMLTextAreaElement }) => {
+    const el = e.currentTarget;
+    el.style.height = "auto";
+    el.style.height = el.scrollHeight + 2 + "px";
   };
 
   const saveEdit = () => {
@@ -159,13 +166,18 @@ export default function TaskModal({ task, onClose, onToggleStep, onAddStep, onRe
                       saveEdit();
                     }}
                   >
-                    <input
+                    <textarea
                       ref={editRef}
-                      type="text"
+                      rows={3}
                       value={draft}
                       onChange={(e) => setDraft(e.target.value)}
+                      onFocus={fitEdit}
+                      onInput={(e) => fitEdit(e)}
                       onKeyDown={(e) => {
-                        if (e.key === "b" && (e.ctrlKey || e.metaKey)) {
+                        if (e.key === "Enter" && !e.shiftKey) {
+                          e.preventDefault();
+                          saveEdit();
+                        } else if (e.key === "b" && (e.ctrlKey || e.metaKey)) {
                           e.preventDefault();
                           bold();
                         } else if (e.key === "Escape") {
@@ -177,6 +189,7 @@ export default function TaskModal({ task, onClose, onToggleStep, onAddStep, onRe
                       autoComplete="off"
                       autoFocus
                     />
+                    <div className="step-edit-actions">
                     <button
                       type="button"
                       className="bold-button"
@@ -190,6 +203,7 @@ export default function TaskModal({ task, onClose, onToggleStep, onAddStep, onRe
                     <button type="submit" className="step-save">
                       Save
                     </button>
+                    </div>
                   </form>
                 ) : (
                   <>

@@ -9,7 +9,7 @@ def _capitalize(text: str) -> str:
 # Titles, steps and results are stored starting with a capital letter.
 NonEmptyText = Annotated[
     str,
-    StringConstraints(strip_whitespace=True, min_length=1, max_length=500),
+    StringConstraints(strip_whitespace=True, min_length=1, max_length=2000),
     AfterValidator(_capitalize),
 ]
 

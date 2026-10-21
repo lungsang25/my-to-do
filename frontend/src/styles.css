@@ -1194,14 +1194,28 @@ button {
 
 .step-edit {
   display: flex;
+  flex-direction: column;
   flex: 1;
   min-width: 0;
+  gap: 8px;
+}
+
+.step-edit-actions {
+  display: flex;
+  justify-content: flex-end;
   gap: 6px;
 }
 
-.step-edit input {
-  flex: 1;
+.step-edit-actions button {
+  padding: 8px 16px;
+}
+
+.step-edit textarea {
+  width: 100%;
   min-width: 0;
+  resize: none;
+  line-height: 1.45;
+  box-sizing: border-box;
   padding: 8px 12px;
   border: 1px solid var(--accent);
   border-radius: 8px;
