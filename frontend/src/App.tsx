@@ -141,6 +141,17 @@ export default function App() {
     await refresh(); // real ids (and the server's view if the save failed)
   };
 
+  const editTitle = async (taskId: number, title: string) => {
+    if (taskId < 0) return;
+    setTasks((prev) => prev.map((t) => (t.id === taskId ? { ...t, title } : t))); // optimistic
+    try {
+      await api.setTaskTitle(taskId, title);
+    } catch (e) {
+      setError((e as Error).message);
+      await refresh();
+    }
+  };
+
   const editStep = async (stepId: number, text: string) => {
     if (stepId < 0) return;
     setTasks((prev) =>
@@ -355,6 +366,7 @@ export default function App() {
           onAddStep={addStep}
           onReorder={reorderSteps}
           onEditStep={editStep}
+          onEditTitle={editTitle}
         />}
     </>
   );

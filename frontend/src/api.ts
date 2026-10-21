@@ -49,6 +49,8 @@ export const api = {
   listTasks: () => request<Task[]>("/tasks"),
   createTask: (title: string) =>
     request<Task>("/tasks", { method: "POST", body: JSON.stringify({ title }) }),
+  setTaskTitle: (taskId: number, title: string) =>
+    request<Task>(`/tasks/${taskId}`, { method: "PATCH", body: JSON.stringify({ title }) }),
   addStep: (taskId: number, text: string) =>
     request<Step>(`/tasks/${taskId}/steps`, { method: "POST", body: JSON.stringify({ text }) }),
   addResult: (taskId: number, text: string) =>

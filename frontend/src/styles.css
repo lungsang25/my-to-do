@@ -1280,3 +1280,26 @@ button {
 .history-steps strong {
   font-weight: 700;
 }
+
+.title-edit {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  gap: 6px;
+}
+
+.title-edit input {
+  flex: 1;
+  min-width: 0;
+  padding: 6px 12px;
+  border: 1px solid var(--accent);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--fg);
+  font: inherit;
+  outline: none;
+}
+
+.title-edit .step-save {
+  padding: 6px 16px;
+}

@@ -17,6 +17,7 @@ from .schemas import (
     StepUpdate,
     Task,
     TaskCreate,
+    TaskUpdate,
 )
 
 DEFAULT_DURATION = "1d"
@@ -150,6 +151,14 @@ def create_task(body: TaskCreate, conn: Conn = Depends(get_conn)) -> Task:
 
 @app.get("/api/tasks/{task_id}", response_model=Task)
 def get_task(task_id: int, conn: Conn = Depends(get_conn)) -> Task:
+    return _load_task(conn, task_id)
+
+
+@app.patch("/api/tasks/{task_id}", response_model=Task)
+def update_task(task_id: int, body: TaskUpdate, conn: Conn = Depends(get_conn)) -> Task:
+    cur = conn.execute("UPDATE tasks SET title = ? WHERE id = ?", (body.title, task_id))
+    if cur.rowcount == 0:
+        raise HTTPException(status_code=404, detail="Task not found")
     return _load_task(conn, task_id)
 
 

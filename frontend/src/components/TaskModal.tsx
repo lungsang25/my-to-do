@@ -11,15 +11,24 @@ interface Props {
   onAddStep: (task: Task, text: string) => void;
   onReorder: (task: Task, stepIds: number[]) => void;
   onEditStep: (stepId: number, text: string) => void;
+  onEditTitle: (taskId: number, title: string) => void;
 }
 
-export default function TaskModal({ task, onClose, onToggleStep, onAddStep, onReorder, onEditStep }: Props) {
+export default function TaskModal({ task, onClose, onToggleStep, onAddStep, onReorder, onEditStep, onEditTitle }: Props) {
   const [editing, setEditing] = useState(false);
   const [text, setText] = useState("");
   // The step whose text is being edited, with its draft (bold parts sit between ** markers).
   const [editId, setEditId] = useState<number | null>(null);
   const [draft, setDraft] = useState("");
   const editRef = useRef<HTMLTextAreaElement>(null);
+
+  const [titleDraft, setTitleDraft] = useState<string | null>(null);
+
+  const saveTitle = () => {
+    const value = (titleDraft ?? "").trim();
+    if (value && value !== cap(task.title)) onEditTitle(task.id, value);
+    setTitleDraft(null);
+  };
 
   const startEdit = (s: Step) => {
     setEditId(s.id);
@@ -115,7 +124,57 @@ export default function TaskModal({ task, onClose, onToggleStep, onAddStep, onRe
         <div className="modal-header">
           <h2 id="modal-title">
             <Bolt size={22} />
-            <span>{cap(task.title)}</span>
+            {editing && titleDraft !== null ? (
+              <form
+                className="title-edit"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  saveTitle();
+                }}
+              >
+                <input
+                  type="text"
+                  value={titleDraft}
+                  onChange={(e) => setTitleDraft(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Escape") {
+                      e.stopPropagation();
+                      setTitleDraft(null);
+                    }
+                  }}
+                  aria-label="Edit title"
+                  autoComplete="off"
+                  autoFocus
+                />
+                <button type="submit" className="step-save">
+                  Save
+                </button>
+              </form>
+            ) : (
+              <>
+                <span>{cap(task.title)}</span>
+                {editing && (
+                  <button
+                    type="button"
+                    className="edit-step"
+                    onClick={() => setTitleDraft(cap(task.title))}
+                    aria-label="Edit title"
+                    title="Edit title"
+                  >
+                    <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+                      <path
+                        d="M4 20h4L19 9l-4-4L4 16v4zM13.5 6.5l4 4"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  </button>
+                )}
+              </>
+            )}
           </h2>
           {canEdit && (
             <button
@@ -124,6 +183,7 @@ export default function TaskModal({ task, onClose, onToggleStep, onAddStep, onRe
               onClick={() => {
                 setEditing((v) => !v);
                 setEditId(null);
+                setTitleDraft(null);
               }}
               aria-pressed={editing}
             >

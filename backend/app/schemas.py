@@ -20,6 +20,10 @@ class TaskCreate(BaseModel):
     title: NonEmptyText
 
 
+class TaskUpdate(BaseModel):
+    title: NonEmptyText
+
+
 class StepCreate(BaseModel):
     text: NonEmptyText
 
