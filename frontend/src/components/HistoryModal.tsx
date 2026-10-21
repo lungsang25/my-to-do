@@ -69,7 +69,10 @@ export default function HistoryModal({ tasks, durationLabel, onClose }: Props) {
         ) : (
           days.map(([key, items]) => (
             <section key={key} className="history-day">
-              <h3 className="history-date">{dayLabel(key)}</h3>
+              <h3 className="history-date">
+                {dayLabel(key)}
+                <span className="history-stamp-label">Done at</span>
+              </h3>
               <ul className="history-list">
                 {items.map(({ task, at }) => (
                   <li key={task.id}>
@@ -79,12 +82,9 @@ export default function HistoryModal({ tasks, durationLabel, onClose }: Props) {
                           <Bolt size={16} />
                           {cap(task.title)}
                         </span>
-                        <span className="history-stamp">
-                          <span className="history-stamp-label">Done at :</span>
-                          <time className="history-time" dateTime={at.toISOString()}>
-                            {at.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit", hour12: true })}
-                          </time>
-                        </span>
+                        <time className="history-time" dateTime={at.toISOString()}>
+                          {at.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit", hour12: true })}
+                        </time>
                       </summary>
                       <ul className="history-steps">
                         {task.steps.map((s) => (

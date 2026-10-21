@@ -546,7 +546,7 @@ button {
   align-items: center;
   gap: 5px;
   color: var(--streak);
-  font-size: 1.05rem;
+  font-size: 1.2rem;
   font-weight: 700;
   letter-spacing: 0;
   line-height: 1;
@@ -554,18 +554,19 @@ button {
   cursor: default;
 }
 
+/* Still in progress: same fire, just a softer glow than when today is won. */
 .streak.pending {
-  color: var(--muted);
+  opacity: 0.85;
 }
 
 .streak-flame {
   flex-shrink: 0;
   overflow: visible;
-  filter: drop-shadow(0 0 6px rgba(255, 120, 20, 0.55));
+  filter: drop-shadow(0 0 7px rgba(255, 120, 20, 0.6));
 }
 
 .streak.pending .streak-flame {
-  filter: none;
+  filter: drop-shadow(0 0 4px rgba(255, 120, 20, 0.4));
 }
 
 .streak-flame-outer,
@@ -575,7 +576,7 @@ button {
 }
 
 .streak-flame-outer {
-  fill: currentColor;
+  fill: url(#streak-fire);
   animation: flame-sway 1.6s ease-in-out infinite;
 }
 
@@ -584,15 +585,6 @@ button {
   animation: flame-core 0.9s ease-in-out infinite alternate;
 }
 
-.streak.pending .streak-flame-core {
-  fill: var(--bg);
-  opacity: 0.5;
-}
-
-/* Calmer flicker while today's tasks are still open. */
-.streak.pending .streak-flame-outer {
-  animation-duration: 2.6s;
-}
 
 @keyframes flame-sway {
   0%, 100% {
@@ -851,7 +843,12 @@ button {
 }
 
 .history-date {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
   margin: 0 0 4px;
+  padding-right: 4px; /* line up with the times below */
   color: var(--muted);
   font-size: 0.85rem;
   font-weight: 600;
@@ -896,23 +893,16 @@ button {
   color: var(--accent);
 }
 
-.history-stamp {
-  position: relative;
-}
-
-/* Floats above the time so the time stays level with the title. */
+/* One per day, above the column of finish times. */
 .history-stamp-label {
-  position: absolute;
-  left: 0;
-  bottom: 100%;
-  margin-bottom: 12px;
   white-space: nowrap;
-  color: var(--muted);
   font-size: 0.7rem;
+  font-weight: 400;
   letter-spacing: 0.04em;
 }
 
 .history-time {
+  flex-shrink: 0;
   color: var(--muted);
   font-size: 0.8rem;
   font-variant-numeric: tabular-nums;
