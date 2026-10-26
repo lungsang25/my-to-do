@@ -659,6 +659,32 @@ button {
   color: var(--fg);
 }
 
+.modal {
+  position: relative;
+}
+
+/* Grab the left or right edge and drag to widen the modal. */
+.modal-resize {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 10px;
+  cursor: ew-resize;
+  touch-action: none;
+}
+
+.modal-resize.left {
+  left: 0;
+}
+
+.modal-resize.right {
+  right: 0;
+}
+
+.modal-resize:hover {
+  background: var(--border);
+}
+
 .modal-header {
   display: flex;
   justify-content: space-between;

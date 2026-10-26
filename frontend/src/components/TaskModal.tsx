@@ -111,6 +111,26 @@ export default function TaskModal({ task, onClose, onToggleStep, onAddStep, onRe
     setDrag(null);
   };
 
+  // Drag the left or right edge to widen the modal; it stays centred, so the width changes by twice the drag.
+  const [width, setWidth] = useState<number | null>(null);
+  const modalRef = useRef<HTMLDivElement>(null);
+  const resize = useRef<{ x: number; w: number; dir: 1 | -1 } | null>(null);
+
+  const startResize = (e: ReactPointerEvent<HTMLDivElement>, dir: 1 | -1) => {
+    e.preventDefault();
+    e.currentTarget.setPointerCapture(e.pointerId);
+    resize.current = { x: e.clientX, w: modalRef.current?.offsetWidth ?? 520, dir };
+  };
+  const moveResize = (e: ReactPointerEvent<HTMLDivElement>) => {
+    const r = resize.current;
+    if (!r) return;
+    const next = r.w + (e.clientX - r.x) * r.dir * 2;
+    setWidth(Math.max(320, Math.min(next, window.innerWidth - 32)));
+  };
+  const endResize = () => {
+    resize.current = null;
+  };
+
   const addStep = () => {
     const value = text.trim();
     if (!value) return;
@@ -120,7 +140,25 @@ export default function TaskModal({ task, onClose, onToggleStep, onAddStep, onRe
 
   return (
     <div className="modal-backdrop" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
-      <div className="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+      <div
+        ref={modalRef}
+        className="modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="modal-title"
+        style={width ? { maxWidth: width } : undefined}
+      >
+        {([-1, 1] as const).map((dir) => (
+          <div
+            key={dir}
+            className={"modal-resize " + (dir < 0 ? "left" : "right")}
+            onPointerDown={(e) => startResize(e, dir)}
+            onPointerMove={moveResize}
+            onPointerUp={endResize}
+            onPointerCancel={endResize}
+            aria-hidden="true"
+          />
+        ))}
         <div className="modal-header">
           <h2 id="modal-title">
             <Bolt size={22} />
