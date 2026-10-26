@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { durationLabel, type Unit } from "../period";
+import { durationLabel, TOMORROW, type Unit } from "../period";
 
 const UNITS: { unit: Unit; label: string }[] = [
   { unit: "d", label: "days" },
@@ -10,6 +10,8 @@ const UNITS: { unit: Unit; label: string }[] = [
 
 interface Props {
   active: string;
+  /** Unfinished tasks waiting in Tomorrow. */
+  tomorrowCount: number;
   /** Durations the user has used before, shortest first. Empty on first use. */
   options: string[];
   /** Streak count for each duration that has been used. */
@@ -19,7 +21,7 @@ interface Props {
 }
 
 /** Pick the period the streak and Done list are measured over. */
-export default function DurationModal({ active, options, streaks, onChoose, onClose }: Props) {
+export default function DurationModal({ active, tomorrowCount, options, streaks, onChoose, onClose }: Props) {
   const closeRef = useRef<HTMLButtonElement>(null);
   const [amount, setAmount] = useState("");
   const [unit, setUnit] = useState<Unit>("d");
@@ -69,6 +71,20 @@ export default function DurationModal({ active, options, streaks, onChoose, onCl
             ))}
           </div>
         )}
+        <p className="duration-help">
+          Can't fit a task into any duration? Park it in Tomorrow to do it later.
+        </p>
+        <div className="duration-presets">
+          <button
+            type="button"
+            className={active === TOMORROW ? "timer-chip is-active" : "timer-chip"}
+            aria-pressed={active === TOMORROW}
+            onClick={() => onChoose(TOMORROW)}
+          >
+            Tomorrow
+            <small>{tomorrowCount} waiting</small>
+          </button>
+        </div>
         <form
           className="timer-custom"
           onSubmit={(e) => {

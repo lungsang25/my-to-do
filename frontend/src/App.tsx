@@ -3,7 +3,7 @@ import { cap } from "./text";
 import { api, type DurationState, type Task } from "./api";
 import { useTheme } from "./theme";
 import { computeStreak, dayKey, nowUtc, parseUtc } from "./streak";
-import { approxDays, durationLabel, periodIndex, periodName } from "./period";
+import { approxDays, durationLabel, periodIndex, periodName, TOMORROW } from "./period";
 import ThemeToggle from "./components/ThemeToggle";
 import PromptInput from "./components/PromptInput";
 import StepsEntry from "./components/StepsEntry";
@@ -263,7 +263,9 @@ export default function App() {
   // (e.g. the default 1 day, before any duration was ever chosen). Shortest first.
   const durationOptions = useMemo(
     () =>
-      [...new Set([...duration.durations.map((d) => d.key), ...tasks.map((t) => t.duration)])].sort(
+      [...new Set([...duration.durations.map((d) => d.key), ...tasks.map((t) => t.duration)])]
+        .filter((k) => k !== TOMORROW)
+        .sort(
         (a, b) => approxDays(a) - approxDays(b),
       ),
     [duration.durations, tasks],
@@ -305,9 +307,13 @@ export default function App() {
               />
             ) : showPrompt ? (
               <PromptInput
-                label={`What is your top priority ${
-                  duration.active === "1d" ? "today" : `this ${periodName(duration.active)}`
-                } ?`}
+                label={
+                  duration.active === TOMORROW
+                    ? "What needs to be done tomorrow?"
+                    : `What is your top priority ${
+                        duration.active === "1d" ? "today" : `this ${periodName(duration.active)}`
+                      } ?`
+                }
                 value={priority}
                 onChange={setPriority}
                 onSubmit={submitPriority}
@@ -342,6 +348,7 @@ export default function App() {
       {showDuration && (
         <DurationModal
           active={duration.active}
+          tomorrowCount={tasks.filter((t) => t.duration === TOMORROW && t.status !== "done").length}
           options={durationOptions}
           streaks={Object.fromEntries(durationOptions.map((k) => [k, streakFor(k).count]))}
           onChoose={chooseDuration}

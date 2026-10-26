@@ -1,7 +1,7 @@
 import type { Status, Task } from "../api";
 import { cap } from "../text";
 import type { Streak as StreakValue } from "../streak";
-import { durationLabel } from "../period";
+import { durationLabel, TOMORROW } from "../period";
 import Bolt from "./Bolt";
 import Streak from "./Streak";
 
@@ -112,7 +112,7 @@ export default function Board({
               </svg>
               {label}
             </span>
-            {status === "done" && <Streak streak={streak} duration={duration} />}
+            {status === "done" && duration !== TOMORROW && <Streak streak={streak} duration={duration} />}
           </h2>
           <ul className="column-list">
             {tasks

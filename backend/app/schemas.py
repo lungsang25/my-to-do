@@ -57,7 +57,8 @@ class Result(BaseModel):
 
 
 # "<n><unit>": 1-999 days (d), weeks (w), months (m) or years (y), e.g. "1d", "2w", "1m".
-DurationKey = Annotated[str, StringConstraints(pattern=r"^[1-9][0-9]{0,2}[dwmy]$")]
+# "tomorrow" is a separate list for tasks that have to wait; it has no periods or streak.
+DurationKey = Annotated[str, StringConstraints(pattern=r"^([1-9][0-9]{0,2}[dwmy]|tomorrow)$")]
 LocalDate = Annotated[str, StringConstraints(pattern=r"^[0-9]{4}-[0-9]{2}-[0-9]{2}$")]
 
 

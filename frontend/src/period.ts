@@ -6,6 +6,9 @@
 
 export type Unit = "d" | "w" | "m" | "y";
 
+/** A list for tasks that can't be done in any other duration but must be done later. No streak. */
+export const TOMORROW = "tomorrow";
+
 const UNIT_WORDS: Record<Unit, string> = { d: "day", w: "week", m: "month", y: "year" };
 
 export function parseDuration(key: string): { n: number; unit: Unit } {
@@ -22,12 +25,14 @@ export function approxDays(key: string): number {
 
 /** "1 day", "2 weeks", "1 month". */
 export function durationLabel(key: string): string {
+  if (key === TOMORROW) return "Tomorrow";
   const { n, unit } = parseDuration(key);
   return `${n} ${UNIT_WORDS[unit]}${n === 1 ? "" : "s"}`;
 }
 
 /** What one period is called: "day", "week", "2-week period". */
 export function periodName(key: string): string {
+  if (key === TOMORROW) return "tomorrow";
   const { n, unit } = parseDuration(key);
   return n === 1 ? UNIT_WORDS[unit] : `${n}-${UNIT_WORDS[unit]} period`;
 }

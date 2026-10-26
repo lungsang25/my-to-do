@@ -266,3 +266,10 @@ def test_rejects_invalid_duration(client):
         {"key": "1w", "anchor": "21/10/2026"},
     ]:
         assert client.put("/api/duration", json=body).status_code == 422
+
+
+def test_tomorrow_is_a_duration(client):
+    r = client.put("/api/duration", json={"key": "tomorrow", "anchor": "2026-10-21"})
+    assert r.status_code == 200
+    assert r.json()["active"] == "tomorrow"
+    assert client.post("/api/tasks", json={"title": "Later"}).json()["duration"] == "tomorrow"
