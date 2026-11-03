@@ -71,3 +71,40 @@ export function periodIndex(date: Date, key: string, anchor: string): number {
   const length = unit === "y" ? n * 12 : n;
   return Math.floor(months / length);
 }
+
+/** Local midnight one full duration after the day `from` falls on (Jan 31 + 1 month = Feb 28). */
+function addDuration(from: Date, key: string): Date {
+  const { n, unit } = parseDuration(key);
+  const y = from.getFullYear();
+  const m = from.getMonth();
+  const d = from.getDate();
+  if (unit === "d" || unit === "w") return new Date(y, m, d + (unit === "w" ? n * 7 : n));
+  const months = m + (unit === "y" ? n * 12 : n);
+  const ty = y + Math.floor(months / 12);
+  const tm = months % 12;
+  return new Date(ty, tm, Math.min(d, daysInMonth(ty, tm)));
+}
+
+/** Durations long enough to get a "days left" reminder on their tasks. */
+export function showsDaysLeft(key: string): boolean {
+  return key !== TOMORROW && approxDays(key) > 7;
+}
+
+/**
+ * Days left to finish a task created at `created`: it gets one full duration from the day
+ * it was created. 1 means today is the last day; 0 or less means it's overdue.
+ */
+export function daysLeft(created: Date, key: string, now = new Date()): number {
+  const end = addDuration(created, key);
+  return (
+    dayNumber(end.getFullYear(), end.getMonth(), end.getDate()) -
+    dayNumber(now.getFullYear(), now.getMonth(), now.getDate())
+  );
+}
+
+/** "12 days left", "Last day", "Overdue". */
+export function daysLeftLabel(days: number): string {
+  if (days <= 0) return "Overdue";
+  if (days === 1) return "Last day";
+  return `${days} days left`;
+}

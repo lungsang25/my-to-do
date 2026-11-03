@@ -108,6 +108,34 @@ def test_delete_task_removes_it_and_its_steps(client):
         assert client.patch(f"/api/steps/{step_id}", json={"done": True}).status_code == 404
 
 
+def test_delete_step(client):
+    task_id = client.post("/api/tasks", json={"title": "Hackathon"}).json()["id"]
+    step_ids = [
+        client.post(f"/api/tasks/{task_id}/steps", json={"text": t}).json()["id"]
+        for t in ["Register", "Book train", "Pack laptop"]
+    ]
+    status = lambda: client.get(f"/api/tasks/{task_id}").json()["status"]  # noqa: E731
+    client.patch(f"/api/steps/{step_ids[0]}", json={"done": True})
+    client.patch(f"/api/steps/{step_ids[2]}", json={"done": True})
+
+    # Deleting the only unchecked step finishes the task.
+    assert client.delete(f"/api/steps/{step_ids[1]}").status_code == 204
+    steps = client.get(f"/api/tasks/{task_id}").json()["steps"]
+    assert [s["text"] for s in steps] == ["Register", "Pack laptop"]
+    assert status() == "done"
+
+    # New steps still go to the end after a gap in positions.
+    client.post(f"/api/tasks/{task_id}/steps", json={"text": "Charge phone"})
+    steps = client.get(f"/api/tasks/{task_id}").json()["steps"]
+    assert [s["text"] for s in steps] == ["Register", "Pack laptop", "Charge phone"]
+
+    # Deleting every step sends the task back to To Do.
+    for s in steps:
+        assert client.delete(f"/api/steps/{s['id']}").status_code == 204
+    assert status() == "todo"
+    assert client.delete(f"/api/steps/{step_ids[0]}").status_code == 404
+
+
 def test_not_found(client):
     assert client.get("/api/tasks/999").status_code == 404
     assert client.post("/api/tasks/999/steps", json={"text": "x"}).status_code == 404

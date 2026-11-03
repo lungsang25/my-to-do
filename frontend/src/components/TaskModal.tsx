@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } f
 import { cap, toggleBold } from "../text";
 import RichText from "./RichText";
 import Bolt from "./Bolt";
+import DaysLeft from "./DaysLeft";
 import type { Step, Task } from "../api";
 
 interface Props {
@@ -11,10 +12,23 @@ interface Props {
   onAddStep: (task: Task, text: string) => void;
   onReorder: (task: Task, stepIds: number[]) => void;
   onEditStep: (stepId: number, text: string) => void;
+  onDeleteStep: (stepId: number, text: string) => void;
   onEditTitle: (taskId: number, title: string) => void;
+  /** Days left to finish the task, for long durations; null shows no reminder. */
+  daysLeft: number | null;
 }
 
-export default function TaskModal({ task, onClose, onToggleStep, onAddStep, onReorder, onEditStep, onEditTitle }: Props) {
+export default function TaskModal({
+  task,
+  onClose,
+  onToggleStep,
+  onAddStep,
+  onReorder,
+  onEditStep,
+  onDeleteStep,
+  onEditTitle,
+  daysLeft,
+}: Props) {
   const [editing, setEditing] = useState(false);
   const [text, setText] = useState("");
   // The step whose text is being edited, with its draft (bold parts sit between ** markers).
@@ -240,6 +254,11 @@ export default function TaskModal({ task, onClose, onToggleStep, onAddStep, onRe
             </svg>
           </button>
         </div>
+        {daysLeft !== null && (
+          <p className="modal-days-left">
+            <DaysLeft days={daysLeft} />
+          </p>
+        )}
         {task.steps.length === 0 && !editing ? (
           <p className="muted">No steps yet.</p>
         ) : (
@@ -335,6 +354,27 @@ export default function TaskModal({ task, onClose, onToggleStep, onAddStep, onRe
                     <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
                       <path
                         d="M4 20h4L19 9l-4-4L4 16v4zM13.5 6.5l4 4"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  </button>
+                )}
+                {editing && editId !== s.id && (
+                  <button
+                    type="button"
+                    className="edit-step delete-step"
+                    onClick={() => onDeleteStep(s.id, s.text)}
+                    disabled={s.id < 0 || drag !== null}
+                    aria-label={`Delete "${s.text}"`}
+                    title="Delete step"
+                  >
+                    <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+                      <path
+                        d="M4 7h16M10 11v6M14 11v6M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2l1-12M9 7V4h6v3"
                         fill="none"
                         stroke="currentColor"
                         strokeWidth="2"

@@ -64,7 +64,8 @@ export const api = {
     request<Step>(`/steps/${stepId}`, { method: "PATCH", body: JSON.stringify({ done }) }),
   setStepText: (stepId: number, text: string) =>
     request<Step>(`/steps/${stepId}`, { method: "PATCH", body: JSON.stringify({ text }) }),
-  getDuration: () => request<DurationState>("/duration"),
+  deleteStep: (stepId: number) => request<void>(`/steps/${stepId}`, { method: "DELETE" }),
+  getDuration:() => request<DurationState>("/duration"),
   setDuration: (key: string, anchor: string) =>
     request<DurationState>("/duration", { method: "PUT", body: JSON.stringify({ key, anchor }) }),
   deleteTask: (taskId: number) => request<void>(`/tasks/${taskId}`, { method: "DELETE" }),

@@ -633,6 +633,29 @@ button {
   font-variant-numeric: tabular-nums;
 }
 
+.days-left {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+  padding: 3px 8px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.days-left.urgent {
+  border-color: var(--error);
+  color: var(--error);
+}
+
+.modal-days-left {
+  margin: -4px 0 12px;
+}
+
 /* ---------- Modal ---------- */
 
 .modal-backdrop {
@@ -1295,6 +1318,10 @@ button {
 
 .edit-step:hover:not(:disabled) {
   color: var(--accent);
+}
+
+.delete-step:hover:not(:disabled) {
+  color: var(--error);
 }
 
 .edit-step:disabled {

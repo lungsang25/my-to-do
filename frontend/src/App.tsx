@@ -3,7 +3,15 @@ import { cap } from "./text";
 import { api, type DurationState, type Task } from "./api";
 import { useTheme } from "./theme";
 import { computeStreak, dayKey, nowUtc, parseUtc } from "./streak";
-import { approxDays, durationLabel, periodIndex, periodName, TOMORROW } from "./period";
+import {
+  approxDays,
+  daysLeft,
+  durationLabel,
+  periodIndex,
+  periodName,
+  showsDaysLeft,
+  TOMORROW,
+} from "./period";
 import ThemeToggle from "./components/ThemeToggle";
 import PromptInput from "./components/PromptInput";
 import StepsEntry from "./components/StepsEntry";
@@ -165,6 +173,28 @@ export default function App() {
     }
   };
 
+  const deleteStep = async (stepId: number, text: string) => {
+    if (stepId < 0) return; // not saved yet
+    if (!window.confirm(`Delete step "${text}"?`)) return;
+    // Optimistic, mirroring the backend rule: Done = has steps and all are checked.
+    setTasks((prev) =>
+      prev.map((t) => {
+        if (!t.steps.some((s) => s.id === stepId)) return t;
+        const steps = t.steps.filter((s) => s.id !== stepId);
+        if (steps.length === 0 || !steps.every((s) => s.done)) {
+          return { ...t, steps, status: "todo", completed_at: null };
+        }
+        return { ...t, steps, status: "done", completed_at: t.completed_at ?? nowUtc() };
+      }),
+    );
+    try {
+      await api.deleteStep(stepId);
+    } catch (e) {
+      setError((e as Error).message);
+      await refresh();
+    }
+  };
+
   const reorderSteps = async (task: Task, stepIds: number[]) => {
     if (task.id < 0 || stepIds.some((id) => id < 0)) return;
     setTasks((prev) =>
@@ -249,6 +279,17 @@ export default function App() {
     // dayTick: re-check when a new day (and maybe a new period) starts.
     [anchorOf, dayTick],
   );
+  // For long durations, how many days are left to finish an unfinished task (null = no reminder).
+  const daysLeftFor = useCallback(
+    (t: Task): number | null => {
+      if (t.status === "done" || !showsDaysLeft(t.duration)) return null;
+      // Drafts not yet saved have no created_at; they were made just now.
+      const created = t.created_at ? parseUtc(t.created_at) : new Date();
+      return daysLeft(created, t.duration);
+    },
+    // dayTick: the count drops at each local midnight.
+    [dayTick],
+  );
   const streakFor = useCallback((key: string) => computeStreak(tasks, key, anchorOf(key)), [tasks, anchorOf, dayTick]);
   const resultTask = tasks.find((t) => t.id === resultTaskId) ?? null;
   const openTask = tasks.find((t) => t.id === openTaskId) ?? null;
@@ -293,6 +334,7 @@ export default function App() {
             streak={streak}
             duration={duration.active}
             isCurrent={isCurrent}
+            daysLeftFor={daysLeftFor}
           />
         )}
 
@@ -373,6 +415,8 @@ export default function App() {
           onAddStep={addStep}
           onReorder={reorderSteps}
           onEditStep={editStep}
+          onDeleteStep={deleteStep}
+          daysLeft={daysLeftFor(openTask)}
           onEditTitle={editTitle}
         />}
     </>

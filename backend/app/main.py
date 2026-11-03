@@ -228,6 +228,16 @@ def update_step(
     return _step(row)
 
 
+@app.delete("/api/steps/{step_id}", status_code=204)
+def delete_step(step_id: int, conn: Conn = Depends(get_conn)) -> None:
+    row = conn.execute("SELECT task_id FROM steps WHERE id = ?", (step_id,)).fetchone()
+    if row is None:
+        raise HTTPException(status_code=404, detail="Step not found")
+    conn.execute("DELETE FROM steps WHERE id = ?", (step_id,))
+    # Removing the last unchecked step can finish the task; removing every step reopens it.
+    _sync_status(conn, row["task_id"])
+
+
 @app.delete("/api/tasks/{task_id}", status_code=204)
 def delete_task(task_id: int, conn: Conn = Depends(get_conn)) -> None:
     cur = conn.execute("DELETE FROM tasks WHERE id = ?", (task_id,))

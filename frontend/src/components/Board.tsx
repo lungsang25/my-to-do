@@ -4,6 +4,7 @@ import type { Streak as StreakValue } from "../streak";
 import { durationLabel, TOMORROW } from "../period";
 import Bolt from "./Bolt";
 import Streak from "./Streak";
+import DaysLeft from "./DaysLeft";
 
 const COLUMNS: { status: Status; label: string }[] = [
   { status: "todo", label: "To Do" },
@@ -25,6 +26,8 @@ interface Props {
   duration: string;
   /** False for done tasks whose period is over; those live in History. */
   isCurrent: (task: Task) => boolean;
+  /** Days left to finish a task, for long durations; null shows no reminder. */
+  daysLeftFor: (task: Task) => number | null;
 }
 
 export default function Board({
@@ -40,6 +43,7 @@ export default function Board({
   streak,
   duration,
   isCurrent,
+  daysLeftFor,
 }: Props) {
   return (
     <section className="board" aria-label="Task board">
@@ -120,6 +124,7 @@ export default function Board({
               .filter((t) => (t.status === "done" ? "done" : "todo") === status)
               .map((t) => {
                 const done = t.steps.filter((s) => s.done).length;
+                const left = daysLeftFor(t);
                 return (
                   <li key={t.id} className="task-row">
                     <button type="button" className="task-item" onClick={() => onOpen(t)}>
@@ -128,6 +133,7 @@ export default function Board({
                         {cap(t.title)}
                       </span>
                     </button>
+                    {left !== null && <DaysLeft days={left} />}
                     {t.results.length > 0 && (
                       <button type="button" className="result-chip" onClick={() => onShowResults(t)}>
                         Result
